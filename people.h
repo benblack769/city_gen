@@ -5,7 +5,9 @@ class people
 {
 public:
     people();
-    std::vector<double> trait1;
     std::vector<Point> home;
-    double trait1_update(int pi);
+    std::vector<Point> work;
+    size_t size(){
+        return home.size();
+    }
 };

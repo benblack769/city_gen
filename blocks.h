@@ -29,6 +29,10 @@ public:
     using count_ty = Array2d<size_t,WORLD_SIZE,WORLD_SIZE>;
     using people_holder = Array2d<vector<size_t>,WORLD_SIZE,WORLD_SIZE>;
     count_ty num_residents;
+    count_ty num_workers;
 
     blocks();
+    static constexpr size_t arrsize(){
+        return WORLD_SIZE*WORLD_SIZE;
+    }
 };

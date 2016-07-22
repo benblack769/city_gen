@@ -15,3 +15,7 @@ using point_iter_cont = PIterContainter<WORLD_SIZE,WORLD_SIZE>;
 inline point_iter_cont iter_all(){
     return point_iter_cont(0,0,WORLD_SIZE,WORLD_SIZE);
 }
+template<class numty>
+inline sqr(numty num){
+    return num * num;
+}

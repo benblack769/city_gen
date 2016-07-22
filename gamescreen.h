@@ -5,12 +5,21 @@
 #include <memory>
 #include <QGraphicsPixmapItem>
 
+struct rgba{
+    uchar r;
+    uchar g;
+    uchar b;
+    uchar a;
+};
+
 class GameScreen : public QGraphicsScene
 {
 public:
     blocks screen_data;
     QTimer frame_timer;
-    std::unique_ptr<QGraphicsPixmapItem> pix;
+    QGraphicsPixmapItem pix;
+    vector<rgba> img_data;
+    
 
     GameScreen();
     void keyPressEvent(QKeyEvent * event);

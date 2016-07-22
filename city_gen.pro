@@ -18,13 +18,15 @@ SOURCES += main.cpp\
     gamescreen.cpp \
     people.cpp \
     firms.cpp \
-    blocks.cpp
+    blocks.cpp \
+    update.cpp
 
 HEADERS  += mainwindow.h \
     gamescreen.h \
     people.h \
     firms.h \
     constants.h \
-    blocks.h
+    blocks.h \
+    update.h
 
 FORMS    += mainwindow.ui
