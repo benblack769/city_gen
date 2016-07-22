@@ -1,7 +1,7 @@
-#ifndef MAINWINDOW_H
-#define MAINWINDOW_H
-
 #include <QMainWindow>
+
+class QGraphicsView;
+class GameScreen;
 
 namespace Ui {
 class MainWindow;
@@ -17,6 +17,6 @@ public:
 
 private:
     Ui::MainWindow *ui;
+    QGraphicsView * veiw;
+    GameScreen * screen;
 };
-
-#endif // MAINWINDOW_H

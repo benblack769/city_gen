@@ -11,10 +11,20 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = city_gen
 TEMPLATE = app
 
+INCLUDEPATH += ../../headerlib
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    gamescreen.cpp \
+    people.cpp \
+    firms.cpp \
+    blocks.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    gamescreen.h \
+    people.h \
+    firms.h \
+    constants.h \
+    blocks.h
 
 FORMS    += mainwindow.ui
