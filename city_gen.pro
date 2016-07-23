@@ -19,7 +19,7 @@ SOURCES += main.cpp\
     people.cpp \
     firms.cpp \
     blocks.cpp \
-    update.cpp
+    test.cpp
 
 HEADERS  += mainwindow.h \
     gamescreen.h \
@@ -27,6 +27,7 @@ HEADERS  += mainwindow.h \
     firms.h \
     constants.h \
     blocks.h \
-    update.h
+    test.h \
+    parrelell.h
 
 FORMS    += mainwindow.ui

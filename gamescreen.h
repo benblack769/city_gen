@@ -17,8 +17,6 @@ class GameScreen : public QGraphicsScene
 public:
     blocks screen_data;
     QTimer frame_timer;
-    QGraphicsPixmapItem pix;
-    vector<rgba> img_data;
     
 
     GameScreen();
@@ -26,5 +24,5 @@ public:
     void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent);
     void mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent);
     void draw();
-    void draw_thing(blocks::count_ty & thing, QColor color,double max_opacity);
+    void draw_thing(blocks::count_ty & thing, QColor color, double max_opacity);
 };

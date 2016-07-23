@@ -8,9 +8,7 @@
 
 GameScreen::GameScreen()
 {
-    this->addItem(&pix);
-    img_data.resize(sqr(WORLD_SIZE));
-    frame_timer.setInterval(100);
+    frame_timer.setInterval(50);
     frame_timer.start();
     connect(&frame_timer,&QTimer::timeout,this,&GameScreen::draw);
 }
@@ -32,12 +30,13 @@ rgba color_convert(QColor color){
 }
 
 void GameScreen::draw_thing(blocks::count_ty & thing, QColor color,double max_opacity){
-
     size_t max_count = *std::max_element(thing.Arr.begin(),thing.Arr.end());
     double mul_value = (255.0*max_opacity)/max_count;
     
+    vector<rgba> img_data(blocks::arrsize());
     rgba mycolor = color_convert(color);
     for(size_t i = 0; i < blocks::arrsize(); i++){
+        rgba prev = img_data[i];
         rgba this_c = mycolor;
         size_t t_count = thing.Arr[i];
         this_c.a = uchar(t_count*mul_value);
@@ -46,8 +45,14 @@ void GameScreen::draw_thing(blocks::count_ty & thing, QColor color,double max_op
     uchar * data = reinterpret_cast<uchar *>(img_data.data());
     QImage img(data,WORLD_SIZE,WORLD_SIZE,QImage::Format_RGBA8888);
     
-    pix.setPixmap(QPixmap::fromImage(img));// = std::unique_ptr<QGraphicsPixmapItem>(this->addPixmap(QPixmap::fromImage(*img)));
+    this->addPixmap(QPixmap::fromImage(img));// = std::unique_ptr<QGraphicsPixmapItem>(this->addPixmap(QPixmap::fromImage(*img)));
 }
 void GameScreen::draw(){
-    draw_thing(screen_data.num_residents,Qt::black,1.0);
+    this->clear();
+    screen_data.update();
+    //draw_thing(screen_data.num_residents,Qt::black,0.5);
+    //draw_thing(screen_data.num_workers,Qt::red, 0.5);
+    draw_thing(screen_data.trans_usage,Qt::red, 0.5);
+    draw_thing(screen_data.trans_invest,Qt::yellow, 0.7);
+    draw_thing(screen_data.size_t_upgrade_vs,Qt::green, 0.4);
 }

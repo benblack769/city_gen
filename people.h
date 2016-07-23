@@ -10,4 +10,8 @@ public:
     size_t size(){
         return home.size();
     }
+    void add_person(Point phome, Point pwork){
+        home.push_back(phome);
+        work.push_back(pwork);
+    }
 };

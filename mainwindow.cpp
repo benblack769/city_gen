@@ -8,7 +8,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
+    
     screen = new GameScreen;
     screen->setSceneRect(QRectF(0, 0, WORLD_SIZE, WORLD_SIZE));
     veiw = new QGraphicsView(screen);
