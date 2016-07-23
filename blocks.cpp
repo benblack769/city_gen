@@ -230,12 +230,10 @@ void blocks::update_block_info(){
     }
 }
 void blocks::update(){
-    clock_t ti = clock();
     board<move_cost_ty> upgrade_vs = update_trans_usage(*this);
     for(size_t i = 0; i < arrsize(); i++){
-        size_t_upgrade_vs.Arr[i] = upgrade_vs.Arr[i] *1000;
+        size_t_upgrade_vs.Arr[i] = upgrade_vs.Arr[i] * 1000;
     }
-    cout << clock() - ti << endl;
     update_trans_invest(*this,upgrade_vs);
     update_block_info();
 }
