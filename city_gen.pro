@@ -30,6 +30,7 @@ HEADERS  += mainwindow.h \
     constants.h \
     blocks.h \
     test.h \
-    parrelell.h
+    parrelell.h \
+    check_obj.h
 
 FORMS    += mainwindow.ui

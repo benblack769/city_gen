@@ -13,6 +13,14 @@ constexpr size_t NUM_PEOPLE = 200;
 
 constexpr size_t DJISTA_ITERS_AFTER_DEST_FOUND = WORLD_SIZE*WORLD_SIZE/16;
 
+const int max_slide = 10;
+const int max_time = 500;
+
+inline int slide_time(int slide){
+    //todo:change to proper logarithmic scale
+    return (slide *  max_time) / max_slide;
+}
+
 using point_iter = PointIter<WORLD_SIZE,WORLD_SIZE>;
 using point_iter_cont = PIterContainter<WORLD_SIZE,WORLD_SIZE>;
 
