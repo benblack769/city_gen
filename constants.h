@@ -13,7 +13,7 @@ constexpr size_t NUM_PEOPLE = 200;
 
 constexpr size_t DJISTA_ITERS_AFTER_DEST_FOUND = WORLD_SIZE*WORLD_SIZE/16;
 
-const int max_slide = 10;
+const int max_slide = 20;
 const int max_time = 500;
 
 inline int slide_time(int slide){
