@@ -15,13 +15,9 @@ blocks::blocks()
     init_info(pps);
     trans_invest.assign(0);
 }
-double rough_dist(Point a,Point b){
-    return max(abs(a.X-b.X),abs(a.Y-b.Y));
+decltype(Point::X) dist(Point a,Point b){
+    return abs(a.X-b.X) + abs(a.Y-b.Y);
 }
-double real_dist(Point a,Point b){
-    return sqrt(sqr(a.X-b.X)+sqr(a.Y-b.Y));
-}
-
 Point rand_p(default_random_engine & eng){
     uniform_int_distribution<int32_t> dist(0,WORLD_SIZE-1);
     return Point{dist(eng),dist(eng)};
@@ -30,7 +26,11 @@ Point rand_p(default_random_engine & eng){
 void init_info(people & pps){
     default_random_engine eng(clock());
     for(int i = 0; i < NUM_PEOPLE; i++){
-        pps.add_person(rand_p(eng),rand_p(eng));
+        Point home = rand_p(eng);
+       // uniform_int_distribution<int32_t> Xdist(max(0,home.X-int32_t(HOME_WORK_MAX_DIS)),min(int32_t(WORLD_SIZE-1),int32_t(home.X+HOME_WORK_MAX_DIS)));
+       // uniform_int_distribution<int32_t> Ydist(max(0,home.Y-int32_t(HOME_WORK_MAX_DIS)),min(int32_t(WORLD_SIZE-1),int32_t(home.Y+HOME_WORK_MAX_DIS)));
+        Point work = rand_p(eng);//(Xdist(eng),Ydist(eng));
+        pps.add_person(home,work);
     }
 }
 using move_cost_ty = double;
@@ -43,8 +43,6 @@ move_cost_ty invest_to_time(size_t invest){
     return 1.0 / invest_to_speed(invest);
 }
 double time_dif_upgrade(size_t cur_invest){
-    //useage*(1/curs)
-    //useage*(1/(curs(+1))
     return invest_to_time(cur_invest) - invest_to_time(cur_invest+1);
 }
 mcarr i_to_s_arr(blocks::count_ty & invests){
@@ -59,12 +57,6 @@ struct PointVal{
     Point p;
     bool operator < (PointVal other)const{
         return this->val > other.val;
-    }
-};
-struct PointValOperator{
-    Point dest;
-    bool operator () (PointVal one,PointVal other)const{
-        return one.val > other.val;
     }
 };
 Point point_before(Point cenp,board<move_cost_ty> & move_costs){
@@ -93,21 +85,18 @@ vector<Point> make_path(board<move_cost_ty> & move_costs,Point start,Point end){
 board<move_cost_ty> djistras_algorithm(Point source,Point dest,mcarr & mcs){
     auto compare_opt = [&](const PointVal & one,const PointVal & other){
         return (one.val != other.val) ? (one.val > other.val):
-                rough_dist(one.p,dest) > rough_dist(other.p,dest);
+                dist(one.p,dest) < dist(other.p,dest);
     };
     auto compare = [&](const PointVal & one,const PointVal & other){
         return (one.val > other.val);
     };
     priority_queue<PointVal,vector<PointVal>,decltype(compare)> minheap(compare);
-    board<bool> done(false);
+    board<uint8_t> done(false);
     board<move_cost_ty> move_to_val(MAX_COST);
 	
     auto add_point = [&](Point p,PointVal prev){
         if(!done[p]){
-            double dis = 1;//check out get_upgrade_vals before uncommenting//p.X == prev.p.X || p.Y == prev.p.Y ? 1 : sqrt(2.0);
-            move_cost_ty time_to_go_over_square = mcs[p] * dis;
-            
-            move_cost_ty tot_val = prev.val+time_to_go_over_square;
+            move_cost_ty tot_val = prev.val+mcs[p];
             
             move_to_val[p] = tot_val;
             minheap.push(PointVal{tot_val,p});

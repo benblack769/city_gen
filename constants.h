@@ -7,11 +7,12 @@ using namespace std;
 
 //#define RUN_TESTS
 
-constexpr size_t WORLD_SIZE = 100;
+constexpr size_t WORLD_SIZE = 200;
 
-constexpr size_t NUM_PEOPLE = 200;
+constexpr size_t NUM_PEOPLE = 400;
+constexpr size_t HOME_WORK_MAX_DIS = 20;
 
-constexpr size_t DJISTA_ITERS_AFTER_DEST_FOUND = WORLD_SIZE*WORLD_SIZE/16;
+constexpr size_t DJISTA_ITERS_AFTER_DEST_FOUND = 1;//WORLD_SIZE*WORLD_SIZE/16;
 
 const int max_slide = 20;
 const int max_time = 500;
