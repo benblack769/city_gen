@@ -24,25 +24,25 @@ Point rand_p(default_random_engine & eng){
 }
 
 void init_info(people & pps){
-    default_random_engine eng(clock());
+    default_random_engine eng(uclock());
     for(int i = 0; i < NUM_PEOPLE; i++){
         Point home = rand_p(eng);
-       // uniform_int_distribution<int32_t> Xdist(max(0,home.X-int32_t(HOME_WORK_MAX_DIS)),min(int32_t(WORLD_SIZE-1),int32_t(home.X+HOME_WORK_MAX_DIS)));
-       // uniform_int_distribution<int32_t> Ydist(max(0,home.Y-int32_t(HOME_WORK_MAX_DIS)),min(int32_t(WORLD_SIZE-1),int32_t(home.Y+HOME_WORK_MAX_DIS)));
-        Point work = rand_p(eng);//(Xdist(eng),Ydist(eng));
+       uniform_int_distribution<int32_t> Xdist(max(0,home.X-int32_t(HOME_WORK_MAX_DIS)),min(int32_t(WORLD_SIZE-1),int32_t(home.X+HOME_WORK_MAX_DIS)));
+        uniform_int_distribution<int32_t> Ydist(max(0,home.Y-int32_t(HOME_WORK_MAX_DIS)),min(int32_t(WORLD_SIZE-1),int32_t(home.Y+HOME_WORK_MAX_DIS)));
+        Point work(Xdist(eng),Ydist(eng));
         pps.add_person(home,work);
     }
 }
 using move_cost_ty = double;
 static const move_cost_ty MAX_COST = 10e50;
 using mcarr = board<move_cost_ty>;
-move_cost_ty invest_to_speed(size_t invest){
+size_t invest_to_speed(size_t invest){
     return (invest + 1);
 }
 move_cost_ty invest_to_time(size_t invest){
     return 1.0 / invest_to_speed(invest);
 }
-double time_dif_upgrade(size_t cur_invest){
+move_cost_ty time_dif_upgrade(size_t cur_invest){
     return invest_to_time(cur_invest) - invest_to_time(cur_invest+1);
 }
 mcarr i_to_s_arr(blocks::count_ty & invests){
@@ -61,9 +61,9 @@ struct PointVal{
 };
 Point point_before(Point cenp,board<move_cost_ty> & move_costs){
     Point minp;
-    double minv = MAX_COST*2;
+    move_cost_ty minv = MAX_COST*2;
     for(Point P : iter_around_1(cenp)){
-        double curv = move_costs[P];
+        move_cost_ty curv = move_costs[P];
         if(curv < minv){
             minv = curv;
             minp = P;
@@ -83,10 +83,6 @@ vector<Point> make_path(board<move_cost_ty> & move_costs,Point start,Point end){
     return vector<Point>(res.rbegin(),res.rend());
 }
 board<move_cost_ty> djistras_algorithm(Point source,Point dest,mcarr & mcs){
-    auto compare_opt = [&](const PointVal & one,const PointVal & other){
-        return (one.val != other.val) ? (one.val > other.val):
-                dist(one.p,dest) < dist(other.p,dest);
-    };
     auto compare = [&](const PointVal & one,const PointVal & other){
         return (one.val > other.val);
     };
@@ -104,8 +100,9 @@ board<move_cost_ty> djistras_algorithm(Point source,Point dest,mcarr & mcs){
             done[p] = true;
         }
     };
+    
     add_point(source,PointVal{0,source});
-    for(size_t max_iter = blocks::arrsize(); max_iter >= 0 && minheap.size() > 0; max_iter--){
+    for(size_t max_iter = blocks::arrsize(); max_iter > 0 && minheap.size() > 0; max_iter--){
         PointVal mintime = minheap.top();
         minheap.pop();
         iter_around1(mintime.p,[&](Point p){
@@ -178,7 +175,7 @@ board<move_cost_ty> update_trans_usage(blocks & blks){
         move_cost_ty min_cost = move_to_costs[mywork]+move_from_costs[mywork]-mc_arr[mywork];
         all_upgrades[pn] = get_upgrade_vals(move_to_costs,move_from_costs,min_cost,mc_arr,blks.trans_invest,myhome,mywork);
         all_paths[pn] = make_path(move_to_costs,myhome,mywork);
-    });
+    });    
     for(vector<Point> & path : all_paths){
         for(Point & p : path){
             blks.trans_usage[p]++;
@@ -188,14 +185,15 @@ board<move_cost_ty> update_trans_usage(blocks & blks){
     for(board<move_cost_ty> & up_vs : all_upgrades){
         add_to(upgrade_vs,up_vs);
     }
+    
     return upgrade_vs;
 }
 void update_trans_invest(blocks & blks,board<move_cost_ty> & upgrade_vs){
     for(size_t inv: range(blks.inv_per_turn)){
-        double max_benefit = 0;
+        move_cost_ty max_benefit = 0;
         Point maxp;
         for(Point P : iter_all()){
-            double cur_ben = upgrade_vs[P];
+            move_cost_ty cur_ben = upgrade_vs[P];
             if(max_benefit < cur_ben){
                 max_benefit = cur_ben;
                 maxp = P;

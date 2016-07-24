@@ -6,13 +6,14 @@
 using namespace std;
 
 //#define RUN_TESTS
+#define EXEC_PARRELELL
 
 constexpr size_t WORLD_SIZE = 200;
 
-constexpr size_t NUM_PEOPLE = 400;
-constexpr size_t HOME_WORK_MAX_DIS = 20;
+constexpr size_t NUM_PEOPLE = 200;
+constexpr size_t HOME_WORK_MAX_DIS = 200;
 
-constexpr size_t DJISTA_ITERS_AFTER_DEST_FOUND = 1;//WORLD_SIZE*WORLD_SIZE/16;
+constexpr size_t DJISTA_ITERS_AFTER_DEST_FOUND = WORLD_SIZE;//WORLD_SIZE*WORLD_SIZE/16;
 
 const int max_slide = 20;
 const int max_time = 500;
@@ -53,4 +54,13 @@ inline vector<Point> iter_around_1(Point cen){
 template<class numty>
 inline numty sqr(numty num){
     return num * num;
+}
+
+inline int64_t uclock() {
+    struct timespec te;
+    clock_gettime(CLOCK_REALTIME,&te); // get current time
+    return te.tv_sec*1000000000LL + te.tv_nsec; 
+}
+inline double time_to_sec(int64_t time){
+    return time / 1000000000.0;
 }

@@ -34,11 +34,13 @@ MainWindow::MainWindow(QWidget *parent) :
 }
 QWidget * MainWindow::make_layout(){
     QWidget * W = new QWidget(this);
-    chks[0] = check_obj("num_residents",false,[&](){screen->draw_thing(screen->screen_data.num_residents,Qt::black, 0.5);},W);
-    chks[1] = check_obj("num_workers",false,[&](){screen->draw_thing(screen->screen_data.num_workers,Qt::blue, 0.5);},W);
-    chks[2] = check_obj("trans_usage",false,[&](){screen->draw_thing(screen->screen_data.trans_usage,Qt::red, 0.5);},W);
-    chks[3] = check_obj("trans_invest",true,[&](){screen->draw_thing(screen->screen_data.trans_invest,Qt::yellow, 0.5);},W);
-    chks[4] = check_obj("size_t_upgrade_vs",true,[&](){screen->draw_thing(screen->screen_data.size_t_upgrade_vs,Qt::green, 0.5);},W);
+    
+    chks[0] = check_obj("residents",false,[&](){screen->draw_thing(screen->screen_data.num_residents,Qt::black, 0.5);},W);
+    chks[1] = check_obj("workers",false,[&](){screen->draw_thing(screen->screen_data.num_workers,Qt::blue, 0.5);},W);
+    chks[2] = check_obj("transportation usage",false,[&](){screen->draw_thing(screen->screen_data.trans_usage,Qt::red, 0.5);},W);
+    chks[3] = check_obj("transportation investment",true,[&](){screen->draw_thing(screen->screen_data.trans_invest,Qt::yellow, 0.5);},W);
+    chks[4] = check_obj("upgrade benefit",true,[&](){screen->draw_thing(screen->screen_data.size_t_upgrade_vs,Qt::green, 0.5);},W);
+    
     QLabel * sclab = new QLabel(QString("Speed Control"));
     QSlider * scslide = new QSlider(this);
     connect(scslide,&QSlider::sliderMoved,[&](int slide_val){
@@ -63,17 +65,17 @@ QWidget * MainWindow::make_layout(){
     return W;
 }
 void MainWindow::draw(){
-    clock_t st = clock();
+    int64_t st = uclock();
     screen->clear();
-    clock_t algost = clock();
+    int64_t algost = uclock();
     screen->screen_data.update();
-    clock_t algotot = clock() - algost;
+    int64_t algotot = uclock() - algost;
     for(check_obj & ck : chks){
         ck.call_if_checked();
     }
-    clock_t tot = clock() - st;
-    cout << "Algorithm time update: " << algotot << endl;
-    cout << "Total time update: " << tot << endl;
+    int64_t tot = uclock() - st;
+    cout << "Algorithm time update: " << time_to_sec(algotot) << endl;
+    cout << "Total time update: " << time_to_sec(tot) << endl;
 }
 MainWindow::~MainWindow()
 {
