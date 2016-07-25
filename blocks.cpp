@@ -27,23 +27,23 @@ void init_info(people & pps){
     default_random_engine eng(uclock());
     for(int i = 0; i < NUM_PEOPLE; i++){
         Point home = rand_p(eng);
-       uniform_int_distribution<int32_t> Xdist(max(0,home.X-int32_t(HOME_WORK_MAX_DIS)),min(int32_t(WORLD_SIZE-1),int32_t(home.X+HOME_WORK_MAX_DIS)));
+        uniform_int_distribution<int32_t> Xdist(max(0,home.X-int32_t(HOME_WORK_MAX_DIS)),min(int32_t(WORLD_SIZE-1),int32_t(home.X+HOME_WORK_MAX_DIS)));
         uniform_int_distribution<int32_t> Ydist(max(0,home.Y-int32_t(HOME_WORK_MAX_DIS)),min(int32_t(WORLD_SIZE-1),int32_t(home.Y+HOME_WORK_MAX_DIS)));
         Point work(Xdist(eng),Ydist(eng));
         pps.add_person(home,work);
     }
 }
-using move_cost_ty = double;
-static const move_cost_ty MAX_COST = 10e50;
+using move_cost_ty = int32_t;
+static const move_cost_ty MAX_COST = 1LL<<28;
 using mcarr = board<move_cost_ty>;
 size_t invest_to_speed(size_t invest){
     return (invest + 1);
 }
 move_cost_ty invest_to_time(size_t invest){
-    return 1.0 / invest_to_speed(invest);
+    return move_cost_ty(1LL <<16) / invest_to_speed(invest);
 }
-move_cost_ty time_dif_upgrade(size_t cur_invest){
-    return invest_to_time(cur_invest) - invest_to_time(cur_invest+1);
+move_cost_ty time_dif_upgrade(move_cost_ty curtime,size_t cur_invest){
+    return curtime - (curtime * invest_to_speed(cur_invest)) / invest_to_speed(cur_invest+1);
 }
 mcarr i_to_s_arr(blocks::count_ty & invests){
     mcarr res;
@@ -83,7 +83,7 @@ vector<Point> make_path(board<move_cost_ty> & move_costs,Point start,Point end){
     return vector<Point>(res.rbegin(),res.rend());
 }
 board<move_cost_ty> djistras_algorithm(Point source,Point dest,mcarr & mcs){
-    auto compare = [&](const PointVal & one,const PointVal & other){
+    auto compare = [](const PointVal & one,const PointVal & other){
         return (one.val > other.val);
     };
     priority_queue<PointVal,vector<PointVal>,decltype(compare)> minheap(compare);
@@ -148,7 +148,7 @@ board<move_cost_ty> get_upgrade_vals(board<move_cost_ty> & mcto,board<move_cost_
     for(Point P : iter_all()){
         if(mcto[P] != MAX_COST && mcfrom[P] != MAX_COST){
             move_cost_ty move_through_val = mcto[P] + mcfrom[P] - movecosts[P];
-            move_cost_ty shorted_time = movecosts[P]*time_dif_upgrade(investment[P]);
+            move_cost_ty shorted_time = time_dif_upgrade(movecosts[P],investment[P]);
             move_cost_ty upgraded_mtv = move_through_val - shorted_time;
             move_cost_ty gained_time = min_val - upgraded_mtv;
             upgrade_vals[P] = max(gained_time,move_cost_ty(0));
