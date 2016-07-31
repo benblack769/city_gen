@@ -7,6 +7,8 @@ public:
     people();
     std::vector<Point> home;
     std::vector<Point> work;
+    std::vector<size_t> income;
+    
     size_t size(){
         return home.size();
     }

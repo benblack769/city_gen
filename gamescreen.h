@@ -20,5 +20,5 @@ public:
     void keyPressEvent(QKeyEvent * event);
     void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent);
     void mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent);
-    void draw_thing(blocks::count_ty & thing, QColor color, double max_opacity);
+    void draw_thing(count_ty & thing, QColor color, double max_opacity);
 };

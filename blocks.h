@@ -5,7 +5,24 @@
 #include <Array2d.hpp>
 
 template<typename obj_ty>
-using board = Array2d<obj_ty,WORLD_SIZE,WORLD_SIZE>;
+class board:
+        public FArray2d<obj_ty>{
+public:
+    board(obj_ty initval=obj_ty()):
+        FArray2d<obj_ty>(WORLD_SIZE,WORLD_SIZE,initval){
+    }
+};
+//
+//static version of above
+//
+//template<typename obj_ty>
+//using board = FArray2d<obj_ty>;//Array2d<obj_ty,WORLD_SIZE,WORLD_SIZE>;
+
+//transit types/consts
+using move_cost_ty = float;
+using mcarr = board<move_cost_ty>;
+using count_ty = board<size_t>;
+using people_holder = board<vector<size_t>>;
 
 // purpose of class is to act as a way to efficiently display data that is stored in the people
 // does not hold any useful data of its own that needs to be saved.
@@ -33,8 +50,6 @@ public:
     
     people pps;
     
-    using count_ty = board<size_t>;
-    using people_holder = board<vector<size_t>>;
     count_ty num_residents;
     count_ty num_workers;
     
@@ -51,4 +66,5 @@ public:
     void update();
 protected:
     void update_block_info();
+    void update_trans();
 };

@@ -26,7 +26,7 @@ rgba color_convert(QColor color){
     return rgba{uchar(r),uchar(g),uchar(b),uchar(a)};
 }
 
-void GameScreen::draw_thing(blocks::count_ty & thing, QColor color,double max_opacity){
+void GameScreen::draw_thing(count_ty & thing, QColor color,double max_opacity){
     size_t max_count = *std::max_element(thing.Arr.begin(),thing.Arr.end());
     double mul_value = (255.0*max_opacity)/max_count;
     

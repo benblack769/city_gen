@@ -21,7 +21,8 @@ SOURCES += main.cpp\
     people.cpp \
     firms.cpp \
     blocks.cpp \
-    test.cpp
+    test.cpp \
+    block_trans.cpp
 
 HEADERS  += mainwindow.h \
     gamescreen.h \

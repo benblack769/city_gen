@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <point.hpp>
 #include <vector>
+#include <ctime>
 
 using namespace std;
 
@@ -10,10 +11,10 @@ using namespace std;
 
 constexpr size_t WORLD_SIZE = 200;
 
-constexpr size_t NUM_PEOPLE = 200;
+constexpr size_t NUM_PEOPLE = 400;
 constexpr size_t HOME_WORK_MAX_DIS = 200;
 
-constexpr size_t DJISTA_ITERS_AFTER_DEST_FOUND = WORLD_SIZE;//WORLD_SIZE*WORLD_SIZE/16;
+constexpr size_t DJISTA_ITERS_AFTER_DEST_FOUND = 1;//WORLD_SIZE;//WORLD_SIZE*WORLD_SIZE/16;
 
 const int max_slide = 20;
 const int max_time = 500;
@@ -47,6 +48,9 @@ inline void iter_around1(Point cen,fn_ty fn){
         fn(Point{cen.X,cen.Y+1});
     }
 }
+inline size_t to_idx(Point P){
+    return P.Y * WORLD_SIZE + P.X;
+}
 
 inline vector<Point> iter_around_1(Point cen){
     return vector<Point>{Point{max(cen.X-1,0),cen.Y},Point{min(cen.X+1,int32_t(WORLD_SIZE-1)),cen.Y},Point{cen.X,max(cen.Y-1,0)},Point{cen.X,min(cen.Y+1,int32_t(WORLD_SIZE-1))}};
@@ -57,9 +61,13 @@ inline numty sqr(numty num){
 }
 
 inline int64_t uclock() {
+#ifdef __linux__ 
     struct timespec te;
     clock_gettime(CLOCK_REALTIME,&te); // get current time
     return te.tv_sec*1000000000LL + te.tv_nsec; 
+#else
+    return clock()*1000000LL;
+#endif
 }
 inline double time_to_sec(int64_t time){
     return time / 1000000000.0;
