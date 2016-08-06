@@ -35,3 +35,6 @@ HEADERS  += mainwindow.h \
     check_obj.h
 
 FORMS    += mainwindow.ui
+
+DISTFILES += \
+    notes.txt
