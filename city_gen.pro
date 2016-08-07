@@ -37,4 +37,4 @@ HEADERS  += mainwindow.h \
 FORMS    += mainwindow.ui
 
 DISTFILES += \
-    notes.txt
+    notes.md
