@@ -28,10 +28,36 @@ mcarr i_to_s_arr(count_ty & invests){
     }
     return res;
 }
+
+
 struct PointVal{
     move_cost_ty val;
     Point p;
+    bool operator < (const PointVal & other){
+        return val > other.val;
+    }
+    bool operator > (const PointVal & other){
+        return !(*this < other);
+    }
+    
 };
+
+bool operator == (const PointVal & one,const PointVal & other){
+    return one.val == other.val;
+}
+std::ostream &operator<<(std::ostream &os, PointVal const &m) { 
+    return os << m.val;
+}
+
+namespace std{
+    template<>
+    struct hash<PointVal>{
+        size_t operator()(const PointVal & pv)const{
+            uint64_t pint = *reinterpret_cast<const uint64_t *>(&pv.p);
+            return pint;
+        }
+    };
+}
 Point point_before(Point cenp,board<move_cost_ty> & move_costs){
     Point minp;
     move_cost_ty minv = MAX_COST*2;
@@ -88,7 +114,7 @@ board<move_cost_ty> djistras_algorithm(Point source,Point dest,mcarr & mcs){
     }
     return move_to_val;
 }
-TEST(djistra_test){
+bool djistra_test(){
     constexpr size_t test_size = 8; 
     Point source(1,1);
     Point dest(5,5);

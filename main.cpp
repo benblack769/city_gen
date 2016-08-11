@@ -6,6 +6,7 @@
 int main(int argc, char *argv[])
 {
 #ifdef RUN_TESTS
+    all_tests.collect_tests();
     all_tests.run_all();
 #else
     QApplication a(argc, argv);
