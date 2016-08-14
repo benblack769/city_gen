@@ -33,7 +33,6 @@ void GameScreen::draw_thing(count_ty & thing, QColor color,double max_opacity){
     vector<rgba> img_data(blocks::arrsize());
     rgba mycolor = color_convert(color);
     for(size_t i = 0; i < blocks::arrsize(); i++){
-        rgba prev = img_data[i];
         rgba this_c = mycolor;
         size_t t_count = thing.Arr[i];
         this_c.a = uchar(t_count*mul_value);

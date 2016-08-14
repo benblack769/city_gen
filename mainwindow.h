@@ -6,7 +6,7 @@ class QGraphicsView;
 class GameScreen;
 struct check_obj;
 
-constexpr size_t NUM_DISPLAYS = 5;
+constexpr size_t NUM_DISPLAYS = 4;
 namespace Ui {
 class MainWindow;
 }

@@ -32,7 +32,8 @@ HEADERS  += mainwindow.h \
     blocks.h \
     test.h \
     parrelell.h \
-    check_obj.h
+    check_obj.h \
+    block_trans.h
 
 FORMS    += mainwindow.ui
 

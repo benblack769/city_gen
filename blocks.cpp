@@ -10,10 +10,10 @@
 
 void init_info(people & pps);
 
-blocks::blocks()
+blocks::blocks():
+    graph(make_graph())
 {
     init_info(pps);
-    trans_invest.assign(0);
 }
 Point rand_p(default_random_engine & eng){
     uniform_int_distribution<int32_t> dist(0,WORLD_SIZE-1);

@@ -41,8 +41,12 @@ inline PIterContainter<size,size> iter_around(Point cen,size_t maxdis){
     return PIterContainter<size,size>(cen,maxdis);
 }
 template<size_t size=WORLD_SIZE>
+inline PIterContainter<size,size> iter_square(Point start,size_t sqr_size){
+    return PIterContainter<size,size>(start.X,start.Y,start.X + sqr_size,start.Y + sqr_size);
+}
+template<size_t size=WORLD_SIZE>
 inline PIterContainter<size,size> iter_square(size_t sqr_size){
-    return PIterContainter<size,size>(0,0,sqr_size,sqr_size);
+    return iter_square<size>(Point(0,0),sqr_size);
 }
 template<typename fn_ty>
 inline void iter_around1(Point cen,fn_ty fn){

@@ -37,9 +37,8 @@ QWidget * MainWindow::make_layout(){
     
     chks[0] = check_obj("residents",false,[&](){screen->draw_thing(screen->screen_data.num_residents,Qt::black, 0.5);},W);
     chks[1] = check_obj("workers",false,[&](){screen->draw_thing(screen->screen_data.num_workers,Qt::blue, 0.5);},W);
-    chks[2] = check_obj("transportation usage",false,[&](){screen->draw_thing(screen->screen_data.trans_usage,Qt::red, 0.5);},W);
-    chks[3] = check_obj("transportation investment",true,[&](){screen->draw_thing(screen->screen_data.trans_invest,Qt::yellow, 0.5);},W);
-    chks[4] = check_obj("upgrade benefit",true,[&](){screen->draw_thing(screen->screen_data.size_t_upgrade_vs,Qt::green, 0.5);},W);
+    chks[2] = check_obj("transportation investment",true,[&](){screen->draw_thing(screen->screen_data.trans_invest_view,Qt::yellow, 0.5);},W);
+    chks[3] = check_obj("upgrade benefit",true,[&](){screen->draw_thing(screen->screen_data.upgrade_vs_view,Qt::green, 0.5);},W);
     
     QLabel * sclab = new QLabel(QString("Speed Control"));
     QSlider * scslide = new QSlider(this);

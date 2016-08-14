@@ -3,6 +3,7 @@
 #include "people.h"
 #include "firms.h"
 #include <Array2d.hpp>
+#include "block_trans.h"
 
 template<typename obj_ty>
 class board:
@@ -18,9 +19,6 @@ public:
 //template<typename obj_ty>
 //using board = FArray2d<obj_ty>;//Array2d<obj_ty,WORLD_SIZE,WORLD_SIZE>;
 
-//transit types/consts
-using move_cost_ty = float;
-using mcarr = board<move_cost_ty>;
 using count_ty = board<size_t>;
 using people_holder = board<vector<size_t>>;
 
@@ -55,9 +53,11 @@ public:
     
     static constexpr size_t inv_per_turn = 1;
     
-    count_ty size_t_upgrade_vs;
+    //views only, do not actually mean anything, should not be read except for by graphical frontend
+    count_ty trans_invest_view;
+    count_ty upgrade_vs_view;
     
-    board<Array2d<size_t,3,3>> trans_invest;
+    vector<Node> graph;
 
     blocks();
     static constexpr size_t arrsize(){
