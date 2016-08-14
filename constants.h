@@ -7,12 +7,20 @@
 using namespace std;
 
 //#define RUN_TESTS
-#define EXEC_PARRELELL
+//#define EXEC_PARRELELL
 
-constexpr size_t WORLD_SIZE = 200;
+constexpr size_t NUM_TIERS = 3;//implicitly there is at least 1 tier
+constexpr size_t TRANS_TIER_1_UNDERLINGS = 15;
+constexpr size_t TRANS_TIER_2_UNDERLINGS = 15;
+constexpr size_t WORLD_SIZE = TRANS_TIER_2_UNDERLINGS*TRANS_TIER_1_UNDERLINGS*8;
+
+static_assert(TRANS_TIER_1_UNDERLINGS%2 == 1,"TRANS_TIER_1_UNDERLINGS must be odd");
+static_assert(TRANS_TIER_2_UNDERLINGS%2 == 1,"TRANS_TIER_2_UNDERLINGS must be odd");
+static_assert(WORLD_SIZE%(TRANS_TIER_1_UNDERLINGS*TRANS_TIER_2_UNDERLINGS) == 0,"WORLD_SIZE must a multiple of the tier underlings");
 
 constexpr size_t NUM_PEOPLE = 400;
 constexpr size_t HOME_WORK_MAX_DIS = 200;
+
 
 constexpr size_t DJISTA_ITERS_AFTER_DEST_FOUND = 1;//WORLD_SIZE;//WORLD_SIZE*WORLD_SIZE/16;
 
@@ -24,14 +32,17 @@ inline int slide_time(int slide){
     return (slide *  max_time) / max_slide;
 }
 
-using point_iter = PointIter<WORLD_SIZE,WORLD_SIZE>;
-using point_iter_cont = PIterContainter<WORLD_SIZE,WORLD_SIZE>;
-
-inline point_iter_cont iter_all(){
-    return point_iter_cont(0,0,WORLD_SIZE,WORLD_SIZE);
+template<size_t size=WORLD_SIZE>
+inline PIterContainter<size,size> iter_all(){
+    return PIterContainter<size,size>();
 }
-inline point_iter_cont iter_around(Point cen,size_t maxdis){
-    return point_iter_cont(cen,maxdis);
+template<size_t size=WORLD_SIZE>
+inline PIterContainter<size,size> iter_around(Point cen,size_t maxdis){
+    return PIterContainter<size,size>(cen,maxdis);
+}
+template<size_t size=WORLD_SIZE>
+inline PIterContainter<size,size> iter_square(size_t sqr_size){
+    return PIterContainter<size,size>(0,0,sqr_size,sqr_size);
 }
 template<typename fn_ty>
 inline void iter_around1(Point cen,fn_ty fn){
@@ -50,10 +61,6 @@ inline void iter_around1(Point cen,fn_ty fn){
 }
 inline size_t to_idx(Point P){
     return P.Y * WORLD_SIZE + P.X;
-}
-
-inline vector<Point> iter_around_1(Point cen){
-    return vector<Point>{Point{max(cen.X-1,0),cen.Y},Point{min(cen.X+1,int32_t(WORLD_SIZE-1)),cen.Y},Point{cen.X,max(cen.Y-1,0)},Point{cen.X,min(cen.Y+1,int32_t(WORLD_SIZE-1))}};
 }
 template<class numty>
 inline numty sqr(numty num){

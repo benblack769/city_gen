@@ -25,7 +25,7 @@ So ones path to work may look like:
            ^^^^xx
            
 
-Say the source is on a tile of level 2, trying to get somewhere outside of that tile. It will path to the 4 tiles of size 3 surrounding their current
+Say the source is on a tile of level 2, trying to get somewhere outside of that tile. It will path to the 8 tiles of size 3 surrounding their current
 tile of level 3, and then not try any more paths on tile level 2 until coming to a tile level 3 that borders the level 3 tiles that contains the destination.
 
 This way, any pathing or spacial analysis can happen in log^2 time with the world size instead of quadratic.
@@ -34,7 +34,12 @@ NOTE: there will be stored accumulated stats for each tile size, and each size s
 
 GRAPHICS NOTE: The smallest sizes might have have tiled graphics, as in a map, if it is too slow.
 
-MAX SIZE: This will allow for world sizes around 10,000x10,000 on an ordinary machine.
+MAX SIZE: This will allow for world sizes around 4,000x4,000 on an ordinary machine.
+
+
+### Tiling implementation notes
+
+
 
 ## Traits/Attributes: 
 
@@ -81,6 +86,7 @@ Traits should be as independent and as few as possible. Try combining some trait
 
 ## Transportation investment:
 
+Investment happens edge by edge by tile. placed at optimal tile location. That means the tile for which benefits are maximal and costs are minimal will be invested in first.
 Investment on differnt tile sizes will be completely independent. 
 You can think of this as different layers of transporations, a long distance one that goes high in 
 the sky and short distance ones on the ground. 
@@ -88,21 +94,17 @@ the sky and short distance ones on the ground.
 This is not meant to look good, it is not meant to generate realistic-looking cities. It is meant
 to allow very fast route calculations that will help simulate crude spacial relationship phenomena like ghettos, districts, etc.
 
-
-### Speed calculation
-
-In general, larger tiles should just about always have
-faster transit, and all pathing algorithms will assume this.
-
 ### Investment calculation 
 
 Use tiling and the altered djikstras algorithms to find optimal paths of the people's routes.
 Then find the optimal cost/benefit calculation. Consider comparing cost of transit investment to other region wide costs.
 
-Consider calculating a list of best tiles to improve to save computation time (as is currently done). Watch out for bad descisions here, though.
+#### Cost Beneift calculation
 
-Under current plan, it is not possible to not allow people to live, work, etc on tiles with high investment to create more realistic looking cities, but
-it can be part of a property cost evaluation (it takes up space, driving up prices). 
+Tilint will work in 
+
+
+Consider calculating a list of best tiles to improve to save computation time (as is currently done). Watch out for bad descisions here, though.
 
 ## Land prices
 

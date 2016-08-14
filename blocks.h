@@ -53,11 +53,11 @@ public:
     count_ty num_residents;
     count_ty num_workers;
     
-    count_ty trans_invest;
     static constexpr size_t inv_per_turn = 1;
-    count_ty trans_usage;
     
     count_ty size_t_upgrade_vs;
+    
+    board<Array2d<size_t,3,3>> trans_invest;
 
     blocks();
     static constexpr size_t arrsize(){
