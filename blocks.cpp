@@ -20,7 +20,7 @@ Point rand_p(default_random_engine & eng){
     return Point{dist(eng),dist(eng)};
 }
 void init_info(people & pps){
-    default_random_engine eng(uclock());
+    default_random_engine eng(1);//uclock());
     for(int i = 0; i < NUM_PEOPLE; i++){
         Point home = rand_p(eng);
         uniform_int_distribution<int32_t> Xdist(max(0,home.X-int32_t(HOME_WORK_MAX_DIS)),min(int32_t(WORLD_SIZE-1),int32_t(home.X+HOME_WORK_MAX_DIS)));

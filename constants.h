@@ -10,15 +10,15 @@ using namespace std;
 //#define EXEC_PARRELELL
 
 constexpr size_t NUM_TIERS = 3;//implicitly there is at least 1 tier
-constexpr size_t TRANS_TIER_1_UNDERLINGS = 15;
-constexpr size_t TRANS_TIER_2_UNDERLINGS = 15;
+constexpr size_t TRANS_TIER_1_UNDERLINGS = 5;
+constexpr size_t TRANS_TIER_2_UNDERLINGS = 5;
 constexpr size_t WORLD_SIZE = TRANS_TIER_2_UNDERLINGS*TRANS_TIER_1_UNDERLINGS*8;
 
 static_assert(TRANS_TIER_1_UNDERLINGS%2 == 1,"TRANS_TIER_1_UNDERLINGS must be odd");
 static_assert(TRANS_TIER_2_UNDERLINGS%2 == 1,"TRANS_TIER_2_UNDERLINGS must be odd");
 static_assert(WORLD_SIZE%(TRANS_TIER_1_UNDERLINGS*TRANS_TIER_2_UNDERLINGS) == 0,"WORLD_SIZE must a multiple of the tier underlings");
 
-constexpr size_t NUM_PEOPLE = 400;
+constexpr size_t NUM_PEOPLE = 200;
 constexpr size_t HOME_WORK_MAX_DIS = 200;
 
 

@@ -18,9 +18,9 @@ using nodecost = pair<size_t,move_cost_ty>;
 
 unordered_map<size_t,move_cost_ty> djistras_algorithm(movecosts source,nodeset dests,vector<Node> & graph);
 
-constexpr size_t UNDERLINGS_Ts[NUM_TIERS] = {0,TRANS_TIER_1_UNDERLINGS,TRANS_TIER_2_UNDERLINGS};
-constexpr size_t NUM_Ts[NUM_TIERS] = {WORLD_SIZE ,WORLD_SIZE / TRANS_TIER_1_UNDERLINGS,TRANS_TIER_1_UNDERLINGS / TRANS_TIER_2_UNDERLINGS};
+constexpr size_t UNDERLINGS_Ts[NUM_TIERS] = {1,TRANS_TIER_1_UNDERLINGS,TRANS_TIER_2_UNDERLINGS};
 constexpr size_t SIZE_Ts[NUM_TIERS] = {1,TRANS_TIER_1_UNDERLINGS,TRANS_TIER_1_UNDERLINGS * TRANS_TIER_2_UNDERLINGS};
+constexpr size_t NUM_Ts[NUM_TIERS] = {WORLD_SIZE / SIZE_Ts[0],WORLD_SIZE / SIZE_Ts[1],TRANS_TIER_1_UNDERLINGS / SIZE_Ts[2]};
 
 template<int8_t tier>
 size_t tier_size_accum(){
@@ -34,19 +34,23 @@ size_t tier_size_accum<-1>(){
 
 template<int8_t tier>
 size_t tieridx(Point P){
-    return tier_size_accum<tier-1>() + P.Y * NUM_Ts[tier] + P.X;
+    return tier_size_accum<tier-1>() + size_t(P.Y) * NUM_Ts[tier] + size_t(P.X);
 }
 template<int8_t tier>
 Point underling_cen(Point tspot){
-    int32_t add_to = (UNDERLINGS_Ts[tier] + 1) / 2;
+    int32_t add_to = UNDERLINGS_Ts[tier] / 2;
     Point tblock = tspot * UNDERLINGS_Ts[tier];
     return tblock + Point{add_to,add_to};
 }
 template<int8_t tier>
 size_t underling_cen_idx(Point tspot){
-    return tieridx<tier-1>(underling_cen<tier>(tspot));
+    if(tier == 0){
+        return tieridx<tier>(tspot);
+    }
+    else{
+        return tieridx<tier-1>(underling_cen<tier>(tspot));
+    }
 }
-
 template<int8_t tier>
 Point overlord(Point tspot){
     return tspot / UNDERLINGS_Ts[tier];
@@ -89,7 +93,7 @@ Node make_node(Point src){
 }
 template<int8_t tier>
 void make_nodes(vector<Node> & graph){
-    for(Point P : iter_all<tier>()){
+    for(Point P : iter_all<NUM_Ts[tier]>()){
         graph[tieridx<tier>(P)] = make_node<tier>(P);
     }
 }
@@ -102,6 +106,15 @@ vector<Node> make_graph(){
     make_nodes<2>(graph);
     return graph;
 }
+move_cost_ty catch_at(movecosts & dict,size_t loc){
+    try{
+        return dict.at(loc);
+    }
+    catch(std::out_of_range & err){
+        cout << err.what();
+    }
+}
+
 template<int8_t tier>
 movecosts upwards_moving_dists(Point tspot,movecosts tm1_starts,movecosts & accumvals,vector<Node> & graph){
     nodeset dests;
@@ -114,8 +127,9 @@ movecosts upwards_moving_dists(Point tspot,movecosts tm1_starts,movecosts & accu
 
     movecosts tdists;
     iter_around8<tier>(tspot,[&](Point P){
-        tdists[tieridx<tier>(P)] = tm1_dists[underling_cen_idx<tier>(P)];
+        tdists[tieridx<tier>(P)] = catch_at(tm1_dists,(underling_cen_idx<tier>(P)));
     });
+    tdists[tieridx<tier>(tspot)] = MAX_COST;
     return tdists;
 }
 
@@ -137,21 +151,21 @@ movecosts downwards_moving_dists(movecosts tsrcs,Point tdest,movecosts & accumva
     iter_around8<tier>(tdest,[&](Point P){
         dests.insert(tieridx<tier>(P));
     });
-    movecosts tdists = djistras_algorithm(tsrcs,dests,graph);
-    accumvals.insert(tdists.begin(),tdists.end());
+    movecosts tcosts = djistras_algorithm(tsrcs,dests,graph);
+    accumvals.insert(tcosts.begin(),tcosts.end());
 
-    movecosts tbelow_dists;
+    movecosts tm1_costs;
+    int8_t t = tier;
     iter_around8<tier>(tdest,[&](Point P){
-        tbelow_dists[underling_cen_idx<tier>(P)] = tdists[tieridx<tier>(P)];
+        tm1_costs[underling_cen_idx<tier>(P)] = catch_at(tcosts,tieridx<tier>(P));
     });
-    return tbelow_dists;
+    return tm1_costs;
 }
 
 template<int8_t tier>
 void all_down_moving_dists(Point dest,movecosts srccosts,movecosts & accumvals,vector<Node> & graph){
-    all_down_moving_dists<tier-1>(dest,
-        downwards_moving_dists<tier>(srccosts,tier_rep<tier>(dest),accumvals,graph),
-        accumvals,graph);
+    movecosts downcosts = downwards_moving_dists<tier>(srccosts,tier_rep<tier>(dest),accumvals,graph);
+    all_down_moving_dists<tier-1>(dest,downcosts,accumvals,graph);
 }
 template<>
 void all_down_moving_dists<0>(Point dest,movecosts srccosts,movecosts & accumvals,vector<Node> & graph){
@@ -186,16 +200,18 @@ movecosts move_costs(Point src,Point dest,vector<Node> & graph){
 void add_marginal_benefit(Point src,Point dest,vector<Node> & graph,vector<Node> & revgraph){
     //revgraph is identical to graph, but the edge movecosts are swapped between the paired edges.
     movecosts forward_mcs = move_costs(src,dest,graph);
-    movecosts backwards_mcs = move_costs(src,dest,revgraph);
+    movecosts backwards_mcs = move_costs(dest,src,revgraph);
     
-    move_cost_ty min_cost = forward_mcs[tieridx<0>(dest)];
+    move_cost_ty min_cost = forward_mcs.at(tieridx<0>(dest));
     
     for(nodecost nc : forward_mcs){
         for(Edge & e : graph[nc.first].edges){
-            if(backwards_mcs.count(nc.first)){
-                move_cost_ty mv_thr_cst_wo_edge = nc.second + backwards_mcs[e.dest];
-                
-                assert(mv_thr_cst_wo_edge + e.movecost < min_cost && "min cost not smallest cost!");
+            if(backwards_mcs.count(e.dest)){
+                move_cost_ty mv_thr_cst_wo_edge = nc.second + backwards_mcs.at(e.dest);
+                if(min_cost > mv_thr_cst_wo_edge + e.movecost){
+                    cout << "arg";
+                }
+                assert(mv_thr_cst_wo_edge + e.movecost >= min_cost && "min cost not smallest cost!");
                 
                 move_cost_ty upgraded_cost = time_dif_upgrade(e.movecost,e.invest);
                 move_cost_ty new_cost = upgraded_cost + mv_thr_cst_wo_edge;
@@ -238,7 +254,7 @@ vector<Point> make_path(board<move_cost_ty> & move_costs,Point start,Point end){
     }
     return vector<Point>(res.rbegin(),res.rend());
 }*/
-unordered_map<size_t,move_cost_ty> djistras_algorithm(movecosts sources,nodeset dests,vector<Node> & graph){
+movecosts djistras_algorithm(movecosts sources,nodeset dests,vector<Node> & graph){
     auto compare = [](const NodeVal & one,const NodeVal & other){
         return (one.val > other.val);
     };
@@ -260,6 +276,9 @@ unordered_map<size_t,move_cost_ty> djistras_algorithm(movecosts sources,nodeset 
     for(auto source : sources){
         minheap.push(NodeVal{source.second,source.first});
         done.insert(source.first);
+        if(dests.count(source.first)){
+            dests.erase(source.first);
+        }
     }
     //main algorithm
     for(size_t max_iter = blocks::arrsize(); max_iter > 0 && minheap.size() > 0; max_iter--){
@@ -269,7 +288,7 @@ unordered_map<size_t,move_cost_ty> djistras_algorithm(movecosts sources,nodeset 
             add_point(e,mintime);
             if(dests.count(e.dest)){
                 dests.erase(e.dest);
-                if(dests.size()){
+                if(dests.size() == 0){
                     //stops computation soon after dests are found
                     max_iter = min(max_iter,DJISTA_ITERS_AFTER_DEST_FOUND);
                 }
