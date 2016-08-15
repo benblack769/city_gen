@@ -20,7 +20,7 @@ unordered_map<size_t,move_cost_ty> djistras_algorithm(movecosts source,nodeset d
 
 constexpr size_t UNDERLINGS_Ts[NUM_TIERS] = {1,TRANS_TIER_1_UNDERLINGS,TRANS_TIER_2_UNDERLINGS};
 constexpr size_t SIZE_Ts[NUM_TIERS] = {1,TRANS_TIER_1_UNDERLINGS,TRANS_TIER_1_UNDERLINGS * TRANS_TIER_2_UNDERLINGS};
-constexpr size_t NUM_Ts[NUM_TIERS] = {WORLD_SIZE / SIZE_Ts[0],WORLD_SIZE / SIZE_Ts[1],TRANS_TIER_1_UNDERLINGS / SIZE_Ts[2]};
+constexpr size_t NUM_Ts[NUM_TIERS] = {WORLD_SIZE / SIZE_Ts[0],WORLD_SIZE / SIZE_Ts[1],WORLD_SIZE / SIZE_Ts[2]};
 
 template<int8_t tier>
 size_t tier_size_accum(){
@@ -59,10 +59,11 @@ template<int8_t tier>
 Point tier_rep(Point boardspot){
     return boardspot / SIZE_Ts[tier];
 }
-
 template<int8_t tier>
 Point base_cen(Point tspot){
-    return ((tspot + Point{1,1}) * SIZE_Ts[tier]) / 2;
+    int32_t add_to = SIZE_Ts[tier] / 2;
+    Point tblock = tspot * SIZE_Ts[tier];
+    return tblock + Point{add_to,add_to};
 }
 
 template<int8_t tier,typename fnty>
@@ -106,19 +107,12 @@ vector<Node> make_graph(){
     make_nodes<2>(graph);
     return graph;
 }
-move_cost_ty catch_at(movecosts & dict,size_t loc){
-    try{
-        return dict.at(loc);
-    }
-    catch(std::out_of_range & err){
-        cout << err.what();
-    }
-}
 
 template<int8_t tier>
 movecosts upwards_moving_dists(Point tspot,movecosts tm1_starts,movecosts & accumvals,vector<Node> & graph){
     nodeset dests;
     iter_around8<tier>(tspot,[&](Point P){
+        Point uP = underling_cen<tier>(P);
         dests.insert(underling_cen_idx<tier>(P));
     });
 
@@ -127,7 +121,7 @@ movecosts upwards_moving_dists(Point tspot,movecosts tm1_starts,movecosts & accu
 
     movecosts tdists;
     iter_around8<tier>(tspot,[&](Point P){
-        tdists[tieridx<tier>(P)] = catch_at(tm1_dists,(underling_cen_idx<tier>(P)));
+        tdists[tieridx<tier>(P)] = tm1_dists.at(underling_cen_idx<tier>(P));
     });
     tdists[tieridx<tier>(tspot)] = MAX_COST;
     return tdists;
@@ -155,9 +149,8 @@ movecosts downwards_moving_dists(movecosts tsrcs,Point tdest,movecosts & accumva
     accumvals.insert(tcosts.begin(),tcosts.end());
 
     movecosts tm1_costs;
-    int8_t t = tier;
     iter_around8<tier>(tdest,[&](Point P){
-        tm1_costs[underling_cen_idx<tier>(P)] = catch_at(tcosts,tieridx<tier>(P));
+        tm1_costs[underling_cen_idx<tier>(P)] = tcosts.at(tieridx<tier>(P));
     });
     return tm1_costs;
 }
@@ -176,17 +169,17 @@ void all_down_moving_dists<0>(Point dest,movecosts srccosts,movecosts & accumval
 
 template<int8_t tier>
 void all_up_moving_dists(Point src,Point dest,movecosts srccosts,movecosts & accumvals,vector<Node> & graph){
-    if(tier >= NUM_TIERS-1 || is_in_bordering_tier_rep<tier+1>(src,dest)){
+    if(is_in_bordering_tier_rep<tier+1>(src,dest)){
         all_down_moving_dists<tier>(dest,srccosts,accumvals,graph);
     }
     else{
-        movecosts tiercosts = upwards_moving_dists<tier>(tier_rep<tier>(src),srccosts,accumvals,graph);
+        movecosts tiercosts = upwards_moving_dists<tier+1>(tier_rep<tier+1>(src),srccosts,accumvals,graph);
         all_up_moving_dists<tier+1>(src,dest,tiercosts,accumvals,graph);
     }
 }
 template<>
-void all_up_moving_dists<NUM_TIERS>(Point ,Point ,movecosts ,movecosts & ,vector<Node> & ){
-    return;
+void all_up_moving_dists<NUM_TIERS-1>(Point src,Point dest,movecosts srccosts,movecosts & accumvals,vector<Node> & graph){
+    all_down_moving_dists<NUM_TIERS-1>(dest,srccosts,accumvals,graph);
 }
 
 movecosts move_costs(Point src,Point dest,vector<Node> & graph){
@@ -209,9 +202,9 @@ void add_marginal_benefit(Point src,Point dest,vector<Node> & graph,vector<Node>
             if(backwards_mcs.count(e.dest)){
                 move_cost_ty mv_thr_cst_wo_edge = nc.second + backwards_mcs.at(e.dest);
                 if(min_cost > mv_thr_cst_wo_edge + e.movecost){
-                    cout << "arg";
+                //    cout << "arg";
                 }
-                assert(mv_thr_cst_wo_edge + e.movecost >= min_cost && "min cost not smallest cost!");
+                //assert(mv_thr_cst_wo_edge + e.movecost >= min_cost && "min cost not smallest cost!");
                 
                 move_cost_ty upgraded_cost = time_dif_upgrade(e.movecost,e.invest);
                 move_cost_ty new_cost = upgraded_cost + mv_thr_cst_wo_edge;
@@ -276,11 +269,13 @@ movecosts djistras_algorithm(movecosts sources,nodeset dests,vector<Node> & grap
     for(auto source : sources){
         minheap.push(NodeVal{source.second,source.first});
         done.insert(source.first);
+        move_to_val[source.first] = source.second;
         if(dests.count(source.first)){
             dests.erase(source.first);
         }
     }
     //main algorithm
+    bool early_stop = false;
     for(size_t max_iter = blocks::arrsize(); max_iter > 0 && minheap.size() > 0; max_iter--){
         NodeVal mintime = minheap.top();
         minheap.pop();
@@ -289,11 +284,15 @@ movecosts djistras_algorithm(movecosts sources,nodeset dests,vector<Node> & grap
             if(dests.count(e.dest)){
                 dests.erase(e.dest);
                 if(dests.size() == 0){
+                    early_stop = true;
                     //stops computation soon after dests are found
                     max_iter = min(max_iter,DJISTA_ITERS_AFTER_DEST_FOUND);
                 }
             }
         }
+    }
+    if(!early_stop){
+        cout << "ran out of places to look for dest" << endl;
     }
     return move_to_val;
 }
@@ -377,13 +376,14 @@ void update_trans_invest(blocks & blks){
 }
 template<int8_t tier,typename fnty>
 void add_view_tier(count_ty & view,vector<Node> & graph,fnty add_fn){
-    for(Node & n : graph){
+    for(size_t ni : range(tier_size_accum<tier-1>(),tier_size_accum<tier>())){
+        Node & n = graph[ni];
         for(Edge & e : n.edges){
             Point start = base_cen<tier>(n.src);
             Point end = base_cen<tier>(graph[e.dest].src);
-            Point inc = (end - start) / SIZE_Ts[tier];
+            Point inc = (end - start) / int32_t(SIZE_Ts[tier]);
             for(Point P = start;P != end; P += inc){
-                view[P] = add_fn(e);
+                view[P] += add_fn(e);
             }
         }
     }

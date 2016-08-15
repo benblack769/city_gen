@@ -17,6 +17,8 @@ MainWindow::MainWindow(QWidget *parent) :
     screen = new GameScreen;
     screen->setSceneRect(QRectF(0, 0, WORLD_SIZE, WORLD_SIZE));
     veiw = new QGraphicsView(screen);
+    
+    veiw->setTransform(QTransform().scale(5,5));
 
     
     QHBoxLayout * lay = new QHBoxLayout(this);

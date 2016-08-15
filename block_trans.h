@@ -39,7 +39,7 @@ vector<Node> make_graph();
 inline decltype(Point::X) dist(Point a,Point b){
     return abs(a.X-b.X) + abs(a.Y-b.Y);
 }
-static const move_cost_ty MAX_COST = 1.0;
+static const move_cost_ty MAX_COST =1LL<<28;
 inline size_t invest_to_speed(size_t invest){
     return (invest + 1);
 }
