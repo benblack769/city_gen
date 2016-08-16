@@ -211,6 +211,8 @@ void add_marginal_benefit(Point src,Point dest,vector<Node> & graph,vector<Node>
     movecosts backwards_mcs = move_costs(dest,src,revgraph);
     
     move_cost_ty min_cost = forward_mcs.at(tieridx<0>(dest));
+    move_cost_ty min_cost2 = backwards_mcs.at(tieridx<0>(src));
+    //assert(abs(min_cost - min_cost2) < 0.01);
     
     for(nodecost nc : forward_mcs){
         for(Edge & e : graph[nc.first].edges){

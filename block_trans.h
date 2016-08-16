@@ -4,6 +4,7 @@
 */
 #include <vector>
 #include <cstdint>
+#include <cassert>
 #include <point.hpp>
 
 using namespace std;
@@ -32,7 +33,8 @@ struct Node{
     }
 protected:
     vector<Edge>::iterator find(size_t edge_dest){
-        return find_if(edges.begin(),edges.end(),[&](Edge & e){return e.dest == edge_dest;});
+        vector<Edge>::iterator res = find_if(edges.begin(),edges.end(),[&](Edge & e){return e.dest == edge_dest;});
+        assert(res != edges.end());
     }
 };
 
