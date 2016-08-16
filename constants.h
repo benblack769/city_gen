@@ -11,8 +11,8 @@ using namespace std;
 
 constexpr size_t WORLD_SIZE = 200;
 
-constexpr size_t NUM_PEOPLE = 400;
-constexpr size_t HOME_WORK_MAX_DIS = 200;
+constexpr size_t NUM_PEOPLE = 100;
+constexpr size_t HOME_WORK_MAX_DIS = 100000;
 
 constexpr size_t DJISTA_ITERS_AFTER_DEST_FOUND = 1;//WORLD_SIZE;//WORLD_SIZE*WORLD_SIZE/16;
 
@@ -24,14 +24,14 @@ inline int slide_time(int slide){
     return (slide *  max_time) / max_slide;
 }
 
-using point_iter = PointIter<WORLD_SIZE,WORLD_SIZE>;
-using point_iter_cont = PIterContainter<WORLD_SIZE,WORLD_SIZE>;
-
-inline point_iter_cont iter_all(){
-    return point_iter_cont(0,0,WORLD_SIZE,WORLD_SIZE);
+inline PIterContainter iter_all(){
+    return PIterContainter(0,0,WORLD_SIZE,WORLD_SIZE);
 }
-inline point_iter_cont iter_around(Point cen,size_t maxdis){
-    return point_iter_cont(cen,maxdis);
+inline PIterContainter iter_rect(int xs,int ys,int xe,int ye){
+    return PIterContainter(max(0,xs),max(0,ys),min(xe,int(WORLD_SIZE)),min(ye,int(WORLD_SIZE)));
+}
+inline PIterContainter iter_around(Point cen,int32_t maxdis){
+    return iter_rect(cen.X-maxdis,cen.Y-maxdis,cen.X+maxdis+1,cen.Y+maxdis+1);
 }
 template<typename fn_ty>
 inline void iter_around1(Point cen,fn_ty fn){

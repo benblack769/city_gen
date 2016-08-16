@@ -131,7 +131,7 @@ bool djistra_test(){
         {5,5,5,2,2,2,2,2}
     };
     mcarr in_data(10000000);
-    for(Point P : point_iter_cont(0,0,test_size,test_size)){
+    for(Point P : PIterContainter(0,0,test_size,test_size)){
         in_data[P] = arr[P.Y][P.X];
     }
     board<move_cost_ty> dikstra_vals = djistras_algorithm(source,dest,in_data);
