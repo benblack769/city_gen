@@ -122,15 +122,14 @@ vector<Node> make_graph(){
     make_nodes<2>(graph);
     return graph;
 }
-
 template<int8_t tier>
 movecosts upwards_moving_dists(Point tspot,movecosts tm1_starts,movecosts & accumvals,vector<Node> & graph){
     nodeset dests;
     iter_around8<tier>(tspot,[&](Point P){
-        Point uP = underling_cen<tier>(P);
         dests.insert(underling_cen_idx<tier>(P));
     });
-
+    
+    accumvals.insert(tm1_starts.begin(),tm1_starts.end());
     movecosts tm1_dists = djistras_algorithm(tm1_starts,dests,graph);
     accumvals.insert(tm1_dists.begin(),tm1_dists.end());
 
@@ -160,6 +159,7 @@ movecosts downwards_moving_dists(movecosts tsrcs,Point tdest,movecosts & accumva
     iter_around8<tier>(tdest,[&](Point P){
         dests.insert(tieridx<tier>(P));
     });
+    accumvals.insert(tsrcs.begin(),tsrcs.end());
     movecosts tcosts = djistras_algorithm(tsrcs,dests,graph);
     accumvals.insert(tcosts.begin(),tcosts.end());
 
@@ -216,15 +216,16 @@ void add_marginal_benefit(Point src,Point dest,vector<Node> & graph,vector<Node>
         for(Edge & e : graph[nc.first].edges){
             if(backwards_mcs.count(e.dest)){
                 move_cost_ty mv_thr_cst_wo_edge = nc.second + backwards_mcs.at(e.dest);
+                
                 if(min_cost > mv_thr_cst_wo_edge + e.movecost){
-                    cout << "arg";
+                //    cout << "arg";
                 }
-                assert(mv_thr_cst_wo_edge + e.movecost >= min_cost && "min cost not smallest cost!");
+                //assert(mv_thr_cst_wo_edge + e.movecost >= min_cost && "min cost not smallest cost!");
                 
                 move_cost_ty upgraded_cost = time_dif_upgrade(e.movecost,e.invest,e.dis);
                 move_cost_ty new_cost = upgraded_cost + mv_thr_cst_wo_edge;
                 move_cost_ty gained_time = min_cost - new_cost;
-                if(gained_time > 0){
+                if(gained_time > 0 && min_cost <= mv_thr_cst_wo_edge + e.movecost){
                     e.marg_benefit_invest += gained_time;
                 }
             }
