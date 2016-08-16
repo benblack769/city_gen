@@ -10,16 +10,16 @@ using namespace std;
 //#define EXEC_PARRELELL
 
 constexpr size_t NUM_TIERS = 3;//implicitly there is at least 1 tier
-constexpr size_t TRANS_TIER_1_UNDERLINGS = 7;
-constexpr size_t TRANS_TIER_2_UNDERLINGS = 7;
+constexpr size_t TRANS_TIER_1_UNDERLINGS = 5;
+constexpr size_t TRANS_TIER_2_UNDERLINGS = 5;
 constexpr size_t WORLD_SIZE = TRANS_TIER_2_UNDERLINGS*TRANS_TIER_1_UNDERLINGS*8;
 
 static_assert(TRANS_TIER_1_UNDERLINGS%2 == 1,"TRANS_TIER_1_UNDERLINGS must be odd");
 static_assert(TRANS_TIER_2_UNDERLINGS%2 == 1,"TRANS_TIER_2_UNDERLINGS must be odd");
 static_assert(WORLD_SIZE%(TRANS_TIER_1_UNDERLINGS*TRANS_TIER_2_UNDERLINGS) == 0,"WORLD_SIZE must a multiple of the tier underlings");
 
-constexpr size_t NUM_PEOPLE = 30;
-constexpr size_t HOME_WORK_MAX_DIS = 200;
+constexpr size_t NUM_PEOPLE = 100;
+constexpr size_t HOME_WORK_MAX_DIS = 10000;
 
 
 constexpr size_t DJISTA_ITERS_AFTER_DEST_FOUND = 1;//WORLD_SIZE;//WORLD_SIZE*WORLD_SIZE/16;
@@ -33,19 +33,23 @@ inline int slide_time(int slide){
 }
 
 template<size_t size=WORLD_SIZE>
-inline PIterContainter<size,size> iter_all(){
-    return PIterContainter<size,size>();
+inline PIterContainter iter_all(){
+    return PIterContainter(0,0,size,size);
 }
 template<size_t size=WORLD_SIZE>
-inline PIterContainter<size,size> iter_around(Point cen,size_t maxdis){
-    return PIterContainter<size,size>(cen,maxdis);
+inline PIterContainter iter_rect(int startx,int starty,int endx,int endy){
+    return PIterContainter(max(0,startx),max(0,starty),min(int(size),endx),min(int(size),endy));
 }
 template<size_t size=WORLD_SIZE>
-inline PIterContainter<size,size> iter_square(Point start,size_t sqr_size){
-    return PIterContainter<size,size>(start.X,start.Y,start.X + sqr_size,start.Y + sqr_size);
+inline PIterContainter iter_around(Point cen,int32_t maxdis){
+    return iter_rect<size>(cen.X-maxdis,cen.Y-maxdis,cen.X+maxdis+1,cen.Y+maxdis+1);
 }
 template<size_t size=WORLD_SIZE>
-inline PIterContainter<size,size> iter_square(size_t sqr_size){
+inline PIterContainter iter_square(Point start,int32_t sqr_size){
+    return iter_rect<size>(start.X,start.Y,start.X + sqr_size,start.Y + sqr_size);
+}
+template<size_t size=WORLD_SIZE>
+inline PIterContainter iter_square(int32_t sqr_size){
     return iter_square<size>(Point(0,0),sqr_size);
 }
 template<typename fn_ty>

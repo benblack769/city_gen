@@ -22,6 +22,20 @@ constexpr size_t UNDERLINGS_Ts[NUM_TIERS] = {1,TRANS_TIER_1_UNDERLINGS,TRANS_TIE
 constexpr size_t SIZE_Ts[NUM_TIERS] = {1,TRANS_TIER_1_UNDERLINGS,TRANS_TIER_1_UNDERLINGS * TRANS_TIER_2_UNDERLINGS};
 constexpr size_t NUM_Ts[NUM_TIERS] = {WORLD_SIZE / SIZE_Ts[0],WORLD_SIZE / SIZE_Ts[1],WORLD_SIZE / SIZE_Ts[2]};
 
+inline float distance(Point a,Point b){
+    return sqrt(sqr(a.X-b.X) + sqr(a.Y-b.Y));
+}
+static const move_cost_ty MAX_COST =1LL<<28;
+inline move_cost_ty invest_to_speed(size_t invest){
+    return (invest + 1);
+}
+inline move_cost_ty invest_to_time(size_t invest,float dis){
+    return move_cost_ty(1.0)*dis / invest_to_speed(invest);
+}
+inline move_cost_ty time_dif_upgrade(move_cost_ty curtime,size_t cur_invest,float dis){
+    return (curtime - (curtime * invest_to_speed(cur_invest)) / invest_to_speed(cur_invest+1))/dis;
+}
+
 template<int8_t tier>
 size_t tier_size_accum(){
     //count of nodes up to and including the current tier
@@ -87,7 +101,8 @@ Node make_node(Point src){
     nn.edges.reserve(8);
     for(Point dest : iter_around<NUM_Ts[tier]>(src,1)){
         if(dest != src){
-            nn.add_edge(tieridx<tier>(dest));
+            float boarddis = distance(base_cen<tier>(src),base_cen<tier>(dest));
+            nn.add_edge(tieridx<tier>(dest),boarddis);
         }
     }
     return nn;
@@ -135,7 +150,7 @@ void set_move_speed(Point tspot,vector<Node> & graph){
         graph[tieridx<tier>(tspot)].get_edge(pointval.first).movecost = pointval.second;
     }*/
     for(Edge & e : graph[tieridx<tier>(tspot)].edges){
-        e.movecost = invest_to_time(e.invest);
+        e.movecost = invest_to_time(e.invest,e.dis);
     }
 }
 
@@ -202,11 +217,11 @@ void add_marginal_benefit(Point src,Point dest,vector<Node> & graph,vector<Node>
             if(backwards_mcs.count(e.dest)){
                 move_cost_ty mv_thr_cst_wo_edge = nc.second + backwards_mcs.at(e.dest);
                 if(min_cost > mv_thr_cst_wo_edge + e.movecost){
-                //    cout << "arg";
+                    cout << "arg";
                 }
-                //assert(mv_thr_cst_wo_edge + e.movecost >= min_cost && "min cost not smallest cost!");
+                assert(mv_thr_cst_wo_edge + e.movecost >= min_cost && "min cost not smallest cost!");
                 
-                move_cost_ty upgraded_cost = time_dif_upgrade(e.movecost,e.invest);
+                move_cost_ty upgraded_cost = time_dif_upgrade(e.movecost,e.invest,e.dis);
                 move_cost_ty new_cost = upgraded_cost + mv_thr_cst_wo_edge;
                 move_cost_ty gained_time = min_cost - new_cost;
                 if(gained_time > 0){
@@ -341,7 +356,7 @@ vector<Node> reverse_graph(vector<Node> graph){
     vector<Node> rev = graph;
     for(size_t nn : range(graph.size())){
         for(Edge & e : graph[nn].edges){
-            rev[e.dest].get_edge(nn).movecost = e.movecost;
+            rev.at(e.dest).get_edge(nn).movecost = e.movecost;
         }
     }
     return rev;
@@ -378,7 +393,7 @@ template<int8_t tier,typename fnty>
 void add_view_tier(count_ty & view,vector<Node> & graph,fnty add_fn){
     for(size_t ni : range(tier_size_accum<tier-1>(),tier_size_accum<tier>())){
         Node & n = graph[ni];
-        for(Edge & e : n.edges){
+        for(Edge e : n.edges){
             Point start = base_cen<tier>(n.src);
             Point end = base_cen<tier>(graph[e.dest].src);
             Point inc = (end - start) / int32_t(SIZE_Ts[tier]);
@@ -399,6 +414,6 @@ void set_view(count_ty & view,vector<Node> & graph,fnty add_fn){
 void blocks::update_trans(){
     update_trans_invest(*this);
     
-    set_view(trans_invest_view,graph,[](Edge & e){return e.invest;});
-    set_view(upgrade_vs_view,graph,[](Edge & e){return e.marg_benefit_invest * 1000;});
+    set_view(trans_invest_view,graph,[](Edge e){return e.invest;});
+    set_view(upgrade_vs_view,graph,[](Edge e){return e.marg_benefit_invest * 1000;});
 }
