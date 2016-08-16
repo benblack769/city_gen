@@ -51,7 +51,7 @@ public:
     count_ty num_residents;
     count_ty num_workers;
     
-    static constexpr size_t inv_per_turn = 1;
+    static constexpr size_t inv_per_turn = 10;
     
     //views only, do not actually mean anything, should not be read except for by graphical frontend
     count_ty trans_invest_view;

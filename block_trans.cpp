@@ -88,6 +88,28 @@ void iter_around8(Point cen_p,fnty itfn){
         }
     }
 }
+Point to_point(size_t idx){
+    int8_t tier = 0;
+    if(idx < tier_size_accum<0>()){
+        tier = 0;
+    }
+    else if(idx < tier_size_accum<1>()){
+        tier = 1;
+        idx -= tier_size_accum<0>();
+    }
+    else if(idx < tier_size_accum<2>()){
+        tier = 2;
+        idx -= tier_size_accum<1>();
+    }
+    else{
+        throw runtime_error("pointify failed");
+    }
+    return Point(idx%NUM_Ts[tier],idx/NUM_Ts[tier]);
+}
+void print_p(Point p){
+    cout << p.X  << "\t" << p.Y<< endl;
+}
+
 template<int8_t tier>
 bool is_in_bordering_tier_rep(Point a,Point b){
     Point a_rep = tier_rep<tier>(a);
@@ -128,7 +150,6 @@ movecosts upwards_moving_dists(Point tspot,movecosts tm1_starts,movecosts & accu
     iter_around8<tier>(tspot,[&](Point P){
         dests.insert(underling_cen_idx<tier>(P));
     });
-    
     accumvals.insert(tm1_starts.begin(),tm1_starts.end());
     movecosts tm1_dists = djistras_algorithm(tm1_starts,dests,graph);
     accumvals.insert(tm1_dists.begin(),tm1_dists.end());
@@ -137,7 +158,6 @@ movecosts upwards_moving_dists(Point tspot,movecosts tm1_starts,movecosts & accu
     iter_around8<tier>(tspot,[&](Point P){
         tdists[tieridx<tier>(P)] = tm1_dists.at(underling_cen_idx<tier>(P));
     });
-    tdists[tieridx<tier>(tspot)] = MAX_COST;
     return tdists;
 }
 
@@ -159,6 +179,7 @@ movecosts downwards_moving_dists(movecosts tsrcs,Point tdest,movecosts & accumva
     iter_around8<tier>(tdest,[&](Point P){
         dests.insert(tieridx<tier>(P));
     });
+    
     accumvals.insert(tsrcs.begin(),tsrcs.end());
     movecosts tcosts = djistras_algorithm(tsrcs,dests,graph);
     accumvals.insert(tcosts.begin(),tcosts.end());
@@ -193,7 +214,7 @@ void all_up_moving_dists(Point src,Point dest,movecosts srccosts,movecosts & acc
     }
 }
 template<>
-void all_up_moving_dists<NUM_TIERS-1>(Point src,Point dest,movecosts srccosts,movecosts & accumvals,vector<Node> & graph){
+void all_up_moving_dists<NUM_TIERS-1>(Point ,Point dest,movecosts srccosts,movecosts & accumvals,vector<Node> & graph){
     all_down_moving_dists<NUM_TIERS-1>(dest,srccosts,accumvals,graph);
 }
 
@@ -212,15 +233,15 @@ void add_marginal_benefit(Point src,Point dest,vector<Node> & graph,vector<Node>
     
     move_cost_ty min_cost = forward_mcs.at(tieridx<0>(dest));
     move_cost_ty min_cost2 = backwards_mcs.at(tieridx<0>(src));
-    //assert(abs(min_cost - min_cost2) < 0.01);
+    assert(abs(min_cost - min_cost2) < 0.1);
     
     for(nodecost nc : forward_mcs){
         for(Edge & e : graph[nc.first].edges){
             if(backwards_mcs.count(e.dest)){
                 move_cost_ty mv_thr_cst_wo_edge = nc.second + backwards_mcs.at(e.dest);
-                
-                if(min_cost > mv_thr_cst_wo_edge + e.movecost){
-                //    cout << "arg";
+                move_cost_ty bef_upg_cost = mv_thr_cst_wo_edge + e.movecost;
+                if(min_cost * 0.999 > bef_upg_cost){
+                    cout << "  mincost_error! ";
                 }
                 //assert(mv_thr_cst_wo_edge + e.movecost >= min_cost && "min cost not smallest cost!");
                 
@@ -276,42 +297,37 @@ movecosts djistras_algorithm(movecosts sources,nodeset dests,vector<Node> & grap
     auto add_point = [&](Edge & e,NodeVal prev){
         if(!done.count(e.dest)){
             move_cost_ty tot_val = prev.val+e.movecost;
-
-            move_to_val[e.dest] = tot_val;
             minheap.push(NodeVal{tot_val,e.dest});
-
-            done.insert(e.dest);
         }
     };
     //sets start values
     for(auto source : sources){
         minheap.push(NodeVal{source.second,source.first});
-        done.insert(source.first);
-        move_to_val[source.first] = source.second;
-        if(dests.count(source.first)){
-            dests.erase(source.first);
-        }
     }
     //main algorithm
     bool early_stop = false;
     for(size_t max_iter = blocks::arrsize(); max_iter > 0 && minheap.size() > 0; max_iter--){
         NodeVal mintime = minheap.top();
         minheap.pop();
-        for(Edge & e : graph[mintime.n].edges){
-            add_point(e,mintime);
-            if(dests.count(e.dest)){
-                dests.erase(e.dest);
+        
+        if(!done.count(mintime.n)){
+            done.insert(mintime.n);
+            move_to_val[mintime.n] = mintime.val;
+            
+            if(dests.count(mintime.n)){
+                dests.erase(mintime.n);
                 if(dests.size() == 0){
                     early_stop = true;
                     //stops computation soon after dests are found
                     max_iter = min(max_iter,DJISTA_ITERS_AFTER_DEST_FOUND);
                 }
             }
+            for(Edge & e : graph[mintime.n].edges){
+                add_point(e,mintime);
+            }
         }
     }
-    if(!early_stop){
-        cout << "ran out of places to look for dest" << endl;
-    }
+    assert(early_stop && "ran out of places to look for dest");
     return move_to_val;
 }
 /*
