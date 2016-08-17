@@ -1,5 +1,6 @@
 #include "blocks.h"
-#include "RangeIterator.h"
+#include <headerlib/RangeIterator.h>
+#include <headerlib/range_array.hpp>
 #include <ctime>
 #include <random>
 #include <iostream>

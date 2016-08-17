@@ -2,7 +2,7 @@
 #include "constants.h"
 #include "people.h"
 #include "firms.h"
-#include <Array2d.hpp>
+#include <headerlib/Array2d.hpp>
 #include "block_trans.h"
 
 template<typename obj_ty>

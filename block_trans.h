@@ -5,7 +5,7 @@
 #include <vector>
 #include <cstdint>
 #include <cassert>
-#include <point.hpp>
+#include <headerlib/point.hpp>
 
 using namespace std;
 

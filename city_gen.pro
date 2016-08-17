@@ -14,7 +14,7 @@ QMAKE_CXXFLAGS += -Wextra -Wall --pedantic
 QMAKE_CXXFLAGS_RELEASE -= -O2
 QMAKE_CXXFLAGS_RELEASE += -O3 -march=native -mtune=native
 
-INCLUDEPATH += ../../headerlib
+INCLUDEPATH += ../../
 
 SOURCES += main.cpp\
         mainwindow.cpp \
