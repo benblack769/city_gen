@@ -5,39 +5,28 @@
 #include <vector>
 #include <cstdint>
 #include <cassert>
+#include <array>
+#include <headerlib/Array2d.hpp>
 #include <headerlib/point.hpp>
+#include <headerlib/range_array.hpp>
 
 using namespace std;
 
 using move_cost_ty = float;
 
 struct Edge{
-    Edge(size_t indest,float indis):
-        dest(indest),
+    Edge(float indis):
         dis(indis){
     }
-    size_t dest;
     uint32_t invest = 0;
     float dis;
     move_cost_ty movecost = 0;//cached value caculated from investment
     move_cost_ty marg_benefit_invest = 0;
 };
-struct Node{
-    Point src;
-    vector<Edge> edges;
-    void add_edge(size_t edge_dest,float dis){
-        edges.emplace_back(edge_dest,dis);
-    }
-    Edge & get_edge(size_t edge_dest){
-        return *find(edge_dest);
-    }
-protected:
-    vector<Edge>::iterator find(size_t edge_dest){
-        vector<Edge>::iterator res = find_if(edges.begin(),edges.end(),[&](Edge & e){return e.dest == edge_dest;});
-        assert(res != edges.end());
-        return res;
-    }
-};
+using Node = RangeArray<Edge>;
 
-vector<Node> make_graph();
+using tier_ty = FArray2d<Node>;
+using graph_ty = array<tier_ty,NUM_TIERS>;
+
+graph_ty make_graph();
 

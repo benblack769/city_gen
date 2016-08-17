@@ -13,11 +13,18 @@
 #include "parrelell.h"
 #include "test.h"
 
-using movecosts = unordered_map<size_t,move_cost_ty>;
-using nodeset = unordered_set<size_t>;
-using nodecost = pair<size_t,move_cost_ty>;
+struct pointcost{
+    Point P;
+    move_cost_ty cost;
+};
 
-unordered_map<size_t,move_cost_ty> djistras_algorithm(movecosts source,nodeset dests,vector<Node> & graph);
+using nodeset = vector<Point>;
+using nodecost = PointInfo<move_cost_ty>;
+using movecosts = RangeArray<move_cost_ty>;
+using tiered_movecosts = vector<movecosts>;
+using startcosts = vector<pointcost>;
+
+void djistras_algorithm(movecosts & output,startcosts & sources,nodeset & dests,tier_ty & graph);
 
 constexpr size_t UNDERLINGS_Ts[NUM_TIERS] = {1,TRANS_TIER_1_UNDERLINGS,TRANS_TIER_2_UNDERLINGS};
 constexpr size_t SIZE_Ts[NUM_TIERS] = {1,TRANS_TIER_1_UNDERLINGS,TRANS_TIER_1_UNDERLINGS * TRANS_TIER_2_UNDERLINGS};
@@ -38,33 +45,10 @@ inline move_cost_ty time_dif_upgrade(move_cost_ty curtime,size_t cur_invest,floa
 }
 
 template<int8_t tier>
-size_t tier_size_accum(){
-    //count of nodes up to and including the current tier
-    return tier_size_accum<tier-1>() + sqr(NUM_Ts[tier]);
-}
-template<>
-size_t tier_size_accum<-1>(){
-    return 0;
-}
-
-template<int8_t tier>
-size_t tieridx(Point P){
-    return tier_size_accum<tier-1>() + size_t(P.Y) * NUM_Ts[tier] + size_t(P.X);
-}
-template<int8_t tier>
 Point underling_cen(Point tspot){
     int32_t add_to = UNDERLINGS_Ts[tier] / 2;
     Point tblock = tspot * UNDERLINGS_Ts[tier];
     return tblock + Point{add_to,add_to};
-}
-template<int8_t tier>
-size_t underling_cen_idx(Point tspot){
-    if(tier == 0){
-        return tieridx<tier>(tspot);
-    }
-    else{
-        return tieridx<tier-1>(underling_cen<tier>(tspot));
-    }
 }
 template<int8_t tier>
 Point overlord(Point tspot){
@@ -89,24 +73,6 @@ void iter_around8(Point cen_p,fnty itfn){
         }
     }
 }
-Point to_point(size_t idx){
-    int8_t tier = 0;
-    if(idx < tier_size_accum<0>()){
-        tier = 0;
-    }
-    else if(idx < tier_size_accum<1>()){
-        tier = 1;
-        idx -= tier_size_accum<0>();
-    }
-    else if(idx < tier_size_accum<2>()){
-        tier = 2;
-        idx -= tier_size_accum<1>();
-    }
-    else{
-        throw runtime_error("pointify failed");
-    }
-    return Point(idx%NUM_Ts[tier],idx/NUM_Ts[tier]);
-}
 void print_p(Point p){
     cout << p.X  << "\t" << p.Y<< endl;
 }
@@ -118,76 +84,83 @@ bool is_in_bordering_tier_rep(Point a,Point b){
     return abs(a_rep.X - b_rep.X) + abs(a_rep.Y - b_rep.Y) <= 2;
 }
 
+template<int8_t tier,typename data_ty>
+RangeArray<data_ty> make_ra(Point start,Point pastend){
+    Point corner(max(start.X,0),max(start.Y,0));
+    Point end(min(pastend.X,int32_t(NUM_Ts[tier]),min(pastend.Y,int32_t(NUM_Ts[tier]))));
+    Point size = end - corner;
+    return RangeArray<data_ty>(corner,size.X,size.Y);
+}
+template<int8_t tier,typename data_ty>
+RangeArray<data_ty> make_ra(Point cen,int range){
+    Point rangep = Point(range,range);
+    return make_ra<tier,data_ty>(cen-rangep,cen+rangep+Point(1,1));
+}
+
 template<int8_t tier>
 Node make_node(Point src){
-    Node nn{src,vector<Edge>()};
-    nn.edges.reserve(8);
-    for(Point dest : iter_around<NUM_Ts[tier]>(src,1)){
-        if(dest != src){
-            float boarddis = distance(base_cen<tier>(src),base_cen<tier>(dest));
-            nn.add_edge(tieridx<tier>(dest),boarddis);
-        }
-    }
-    return nn;
+    Node node = make_ra<tier,Edge>(src,1);
+    iter_around8<tier>(src,[&](Point dest){
+        node[dest].dis = distance(base_cen<tier>(src),base_cen<tier>(dest));
+    });
+    return node;
 }
 template<int8_t tier>
-void make_nodes(vector<Node> & graph){
-    for(Point P : iter_all<NUM_Ts[tier]>()){
-        graph[tieridx<tier>(P)] = make_node<tier>(P);
+tier_ty make_nodes(){
+    constexpr size_t num_sqrs = NUM_Ts[tier];
+    tier_ty tier_g(num_sqrs,num_sqrs);
+    for(Point P : iter_all<num_sqrs>()){
+        tier_g[P] = make_node<tier>(P);
     }
+    return tier_g;
 }
-vector<Node> make_graph(){
-    size_t size = tier_size_accum<NUM_TIERS-1>();
-    vector<Node> graph(size);
-
-    make_nodes<0>(graph);
-    make_nodes<1>(graph);
-    make_nodes<2>(graph);
-    return graph;
+graph_ty make_graph(){
+    return graph_ty({make_nodes<0>(),make_nodes<1>(),make_nodes<2>()});
 }
 template<int8_t tier>
-movecosts upwards_moving_dists(Point tspot,movecosts tm1_starts,movecosts & accumvals,vector<Node> & graph){
+startcosts upwards_moving_dists(movecosts & outcosts,Point tspot,startcosts & tm1_starts,tier_ty & graph){
     nodeset dests;
     iter_around8<tier>(tspot,[&](Point P){
-        dests.insert(underling_cen_idx<tier>(P));
+        dests.push_back(underling_cen<tier>(P));
     });
-    accumvals.insert(tm1_starts.begin(),tm1_starts.end());
-    movecosts tm1_dists = djistras_algorithm(tm1_starts,dests,graph);
-    accumvals.insert(tm1_dists.begin(),tm1_dists.end());
+    movecosts & tm1_dists = outcosts;
+    djistras_algorithm(tm1_dists,tm1_starts,dests,graph);
 
-    movecosts tdists;
+    startcosts tdists;
     iter_around8<tier>(tspot,[&](Point P){
-        tdists[tieridx<tier>(P)] = tm1_dists.at(underling_cen_idx<tier>(P));
+        tdists.push_back(pointcost{P,tm1_dists.at(underling_cen<tier>(P))});
     });
     return tdists;
 }
 
 template<int8_t tier>
-void set_move_speed(Point tspot,vector<Node> & graph){
+void set_move_speed(Point tspot,tier_ty & tier_g){
     /*movecosts start;
     start[underling_cen_idx<tier>(tspot)] = 0;
     for(pair<size_t,move_cost_ty> pointval : upwards_moving_dists<tier>(tspot,start)){
         graph[tieridx<tier>(tspot)].get_edge(pointval.first).movecost = pointval.second;
     }*/
-    for(Edge & e : graph[tieridx<tier>(tspot)].edges){
-        e.movecost = invest_to_time(e.invest,e.dis);
+    for(Point src : iter_all<NUM_Ts[tier]>()){
+        iter_around8<tier>(tspot,[&](Point dest){
+            Edge & e = tier_g[src][dest];
+            e.movecost = invest_to_time(e.invest,e.dis);
+        });
     }
 }
 
 template<int8_t tier>
-movecosts downwards_moving_dists(movecosts tsrcs,Point tdest,movecosts & accumvals,vector<Node> & graph){
+startcosts downwards_moving_dists(movecosts & outcosts,startcosts & tsrcs,Point tdest,tier_ty & graph){
     nodeset dests;
     iter_around8<tier>(tdest,[&](Point P){
-        dests.insert(tieridx<tier>(P));
+        dests.push_back(P);
     });
     
-    accumvals.insert(tsrcs.begin(),tsrcs.end());
-    movecosts tcosts = djistras_algorithm(tsrcs,dests,graph);
-    accumvals.insert(tcosts.begin(),tcosts.end());
+    movecosts & tcosts = outcosts;
+    djistras_algorithm(tcosts,tsrcs,dests,graph);
 
-    movecosts tm1_costs;
+    startcosts tm1_costs;
     iter_around8<tier>(tdest,[&](Point P){
-        tm1_costs[underling_cen_idx<tier>(P)] = tcosts.at(tieridx<tier>(P));
+        tm1_costs.push_back(pointcost{underling_cen<tier>(P),tcosts.at(P)});
     });
     return tm1_costs;
 }
@@ -287,7 +260,7 @@ vector<Point> make_path(board<move_cost_ty> & move_costs,Point start,Point end){
     }
     return vector<Point>(res.rbegin(),res.rend());
 }*/
-movecosts djistras_algorithm(movecosts sources,nodeset dests,vector<Node> & graph){
+void djistras_algorithm(movecosts & output, startcosts & sources, nodeset & dests, tier_ty & graph){
     auto compare = [](const NodeVal & one,const NodeVal & other){
         return (one.val > other.val);
     };
