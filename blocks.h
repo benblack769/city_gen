@@ -57,7 +57,7 @@ public:
     count_ty trans_invest_view;
     count_ty upgrade_vs_view;
     
-    vector<Node> graph;
+    graph_ty graph;
 
     blocks();
     static constexpr size_t arrsize(){

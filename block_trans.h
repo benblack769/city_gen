@@ -2,6 +2,7 @@
 1. Essencial types and declarations used by block.
 2. Aproximization functions to tweak and experiment with.
 */
+#pragma once
 #include <vector>
 #include <cstdint>
 #include <cassert>
@@ -9,13 +10,14 @@
 #include <headerlib/Array2d.hpp>
 #include <headerlib/point.hpp>
 #include <headerlib/range_array.hpp>
+#include "constants.h"
 
 using namespace std;
 
 using move_cost_ty = float;
 
 struct Edge{
-    Edge(float indis):
+    Edge(float indis=0):
         dis(indis){
     }
     uint32_t invest = 0;

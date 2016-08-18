@@ -24,7 +24,7 @@ using movecosts = RangeArray<move_cost_ty>;
 using tiered_movecosts = vector<movecosts>;
 using startcosts = vector<pointcost>;
 
-constexpr int POINT_ADJAC_FACTOR = 3;//if the point is a in an ajacent tile a tier above, then it looks a max distancce of this*UNDERLINGS_Ts[tier+1]
+constexpr int POINT_ADJAC_FACTOR = 4;//if the point is a in an ajacent tile a tier above, then it looks a max distancce of this*UNDERLINGS_Ts[tier+1]
 constexpr int POINT_TIER_CHANGE = 2;//if moving a tier above or below, then it looks a max distancce of this*UNDERLINGS_Ts[tier(+/0)1]
 
 void djistras_algorithm(movecosts & output,startcosts & sources,nodeset & dests,tier_ty & graph);
@@ -99,7 +99,12 @@ RangeArray<data_ty> make_ra(Point cen,int range){
     Point rangep = Point(range,range);
     return make_ra<tier,data_ty>(cen-rangep,cen+rangep+Point(1,1));
 }
-
+template<typename data_ty>
+PIterContainter iter_scope(const RangeArray<data_ty> & ra){
+    Point st = ra.Corner;
+    Point end = ra.Corner+Point(ra.XSize,ra.YSize);
+    return PIterContainter(st.X,st.Y,end.X,end.Y);
+}
 template<int8_t tier>
 Node make_node(Point src){
     Node node = make_ra<tier,Edge>(src,1);
@@ -176,71 +181,84 @@ void all_down_moving_dists(Point dest,startcosts & srccosts,tiered_movecosts & a
 }
 template<>
 void all_down_moving_dists<0>(Point dest,startcosts & srccosts,tiered_movecosts & accumvals,graph_ty & graph){
-    nodeset dests({tieridx<0>(dest)});
-    movecosts mv_to_dest_costs = djistras_algorithm(srccosts,dests,graph);
-    accumvals.insert(mv_to_dest_costs.begin(),mv_to_dest_costs.end());
+    nodeset dests({dest});
+    djistras_algorithm(accumvals.back(),srccosts,dests,graph[0]);
 }
 
 template<int8_t tier>
 void all_up_moving_dists(Point src,Point dest,startcosts & srccosts,tiered_movecosts & accumvals,graph_ty & graph){
     if(is_in_bordering_tier_rep<tier+1>(src,dest)){
-        accumvals[tier] = movecosts(tier_rep<tier>(src),)
+        accumvals.push_back(make_ra<tier,move_cost_ty>(tier_rep<tier>(src),POINT_ADJAC_FACTOR*UNDERLINGS_Ts[tier+1]));
         all_down_moving_dists<tier>(dest,srccosts,accumvals,graph);
     }
     else{
-        movecosts tiercosts = upwards_moving_dists<tier+1>(tier_rep<tier+1>(src),srccosts,accumvals,graph);
+        accumvals.push_back(make_ra<tier,move_cost_ty>(tier_rep<tier>(src),UNDERLINGS_Ts[tier+1]*POINT_TIER_CHANGE));
+        startcosts tiercosts = upwards_moving_dists<tier+1>(accumvals.back(),tier_rep<tier+1>(src),srccosts,graph[tier]);
         all_up_moving_dists<tier+1>(src,dest,tiercosts,accumvals,graph);
     }
 }
 template<>
 void all_up_moving_dists<NUM_TIERS-1>(Point ,Point dest,startcosts & srccosts,tiered_movecosts & accumvals,graph_ty & graph){
-    all_down_moving_dists<NUM_TIERS-1>(dest,srccosts,accumvals,graph);
+    constexpr int8_t tier = NUM_TIERS-1;
+    accumvals.push_back(make_ra<tier,move_cost_ty>(Point(0,0),Point(1,1)*NUM_Ts[tier]));
+    all_down_moving_dists<tier>(dest,srccosts,accumvals,graph);
 }
 
-movecosts move_costs(Point src,Point dest,graph_ty & graph){
-    movecosts mcs;
+tiered_movecosts move_costs(Point src,Point dest,graph_ty & graph){
+    tiered_movecosts mcs;
 
-    movecosts start;
-    start[tieridx<0>(src)] = 0;
+    startcosts start({pointcost{src,0}});
     all_up_moving_dists<0>(src,dest,start,mcs,graph);
     return mcs;
 }
-void add_marginal_benefit(Point src,Point dest,vector<Node> & graph,vector<Node> & revgraph){
+void add_marginal_benefit(Point src,Point dest,graph_ty & graph,graph_ty & revgraph){
     //revgraph is identical to graph, but the edge movecosts are swapped between the paired edges.
-    movecosts forward_mcs = move_costs(src,dest,graph);
-    movecosts backwards_mcs = move_costs(dest,src,revgraph);
+    tiered_movecosts forward_mcs = move_costs(src,dest,graph);
+    tiered_movecosts backwards_mcs = move_costs(dest,src,revgraph);
     
-    move_cost_ty min_cost = forward_mcs.at(tieridx<0>(dest));
-    move_cost_ty min_cost2 = backwards_mcs.at(tieridx<0>(src));
-    assert(abs(min_cost - min_cost2) < 0.1);
+    move_cost_ty min_cost = forward_mcs.back().at(dest);
+    move_cost_ty min_cost2 = backwards_mcs.back().at(src);
+    assert(abs(min_cost - min_cost2) < 0.1 && "going forward is not equal to going reverse backwards.");
     
-    for(nodecost nc : forward_mcs){
-        for(Edge & e : graph[nc.first].edges){
-            if(backwards_mcs.count(e.dest)){
-                move_cost_ty mv_thr_cst_wo_edge = nc.second + backwards_mcs.at(e.dest);
-                move_cost_ty bef_upg_cost = mv_thr_cst_wo_edge + e.movecost;
-                if(min_cost * 0.999 > bef_upg_cost){
-                    cout << "  mincost_error! ";
+    assert(forward_mcs.size() == backwards_mcs.size());
+    const size_t move_size = forward_mcs.size();
+    for(size_t mi = 0; mi < move_size; mi++){
+        movecosts f_mcs = forward_mcs[mi];
+        movecosts b_mcs = backwards_mcs[move_size-1-mi];
+        assert(SameScope(f_mcs,b_mcs));
+        for(Point src : iter_scope(f_mcs)){
+            Node & srcnode = graph[mi][src];
+            for(Point dest : iter_scope(srcnode)){
+                if(dest == src){
+                    continue;
                 }
-                //assert(mv_thr_cst_wo_edge + e.movecost >= min_cost && "min cost not smallest cost!");
-                
-                move_cost_ty upgraded_cost = time_dif_upgrade(e.movecost,e.invest,e.dis);
-                move_cost_ty new_cost = upgraded_cost + mv_thr_cst_wo_edge;
-                move_cost_ty gained_time = min_cost - new_cost;
-                if(gained_time > 0 && min_cost <= mv_thr_cst_wo_edge + e.movecost){
-                    e.marg_benefit_invest += gained_time;
+                move_cost_ty fval = f_mcs[src];
+                move_cost_ty bval = b_mcs[dest];
+                if(fval != MAX_COST && bval != MAX_COST){
+                    Edge & e = srcnode[dest];
+                    
+                    move_cost_ty mv_thr_cst_wo_edge = fval + bval;
+                    move_cost_ty bef_upg_cost = mv_thr_cst_wo_edge + e.movecost;
+                    if(min_cost * 0.999 > bef_upg_cost){
+                        cout << "  mincost_error! ";
+                    }
+                    //assert(mv_thr_cst_wo_edge + e.movecost >= min_cost && "min cost not smallest cost!");
+                    
+                    move_cost_ty upgraded_cost = time_dif_upgrade(e.movecost,e.invest,e.dis);
+                    move_cost_ty new_cost = upgraded_cost + mv_thr_cst_wo_edge;
+                    move_cost_ty gained_time = min_cost - new_cost;
+                    if(gained_time > 0 && min_cost <= mv_thr_cst_wo_edge + e.movecost){
+                        e.marg_benefit_invest += gained_time;
+                    }
                 }
             }
         }
     }
 }
 
-
-
-
 struct NodeVal{
     move_cost_ty val;
-    size_t n;
+    Point p;
 };
 /*
 Point point_before(Point cenp,board<move_cost_ty> & move_costs){
@@ -265,49 +283,54 @@ vector<Point> make_path(board<move_cost_ty> & move_costs,Point start,Point end){
     }
     return vector<Point>(res.rbegin(),res.rend());
 }*/
-void djistras_algorithm(movecosts & output, startcosts & sources, nodeset & dests, tier_ty & graph){
+void djistras_algorithm(movecosts & output,startcosts & sources,nodeset & dests,tier_ty & graph){
+    //output is already constructed, here it just assigns default value (the "empty" marker)
+    output.assign(MAX_COST);
+    
     auto compare = [](const NodeVal & one,const NodeVal & other){
         return (one.val > other.val);
     };
     priority_queue<NodeVal,vector<NodeVal>,decltype(compare)> minheap(compare);
-    nodeset done;
-    movecosts move_to_val;
+    RangeArray<bool> done(output.Corner,output.XSize,output.YSize);
 
-    auto add_point = [&](Edge & e,NodeVal prev){
-        if(!done.count(e.dest)){
+    auto add_point = [&](Point dest,Edge e,NodeVal prev){
+        if(done.IsInScope(dest) && !done[dest]){
             move_cost_ty tot_val = prev.val+e.movecost;
-            minheap.push(NodeVal{tot_val,e.dest});
+            minheap.push(NodeVal{tot_val,dest});
         }
     };
     //sets start values
     for(auto source : sources){
-        minheap.push(NodeVal{source.second,source.first});
+        assert(output.IsInScope(source.P));
+        minheap.push(NodeVal{source.cost,source.P});
     }
     //main algorithm
     bool early_stop = false;
-    for(size_t max_iter = blocks::arrsize(); max_iter > 0 && minheap.size() > 0; max_iter--){
+    for(size_t max_iter = done.size()-sources.size(); max_iter > 0 && minheap.size() > 0; max_iter--){
         NodeVal mintime = minheap.top();
         minheap.pop();
         
-        if(!done.count(mintime.n)){
-            done.insert(mintime.n);
-            move_to_val[mintime.n] = mintime.val;
+        if(!done[mintime.p]){//guarenteed to be in scope, because check happens when added to heap
+            done[mintime.p] = true;
+            output[mintime.p] = mintime.val;
             
-            if(dests.count(mintime.n)){
-                dests.erase(mintime.n);
+            auto dest_iter = find(dests.begin(),dests.end(),mintime.p);
+            if(dest_iter != dests.end()){
+                dests.erase(dest_iter);
                 if(dests.size() == 0){
                     early_stop = true;
                     //stops computation soon after dests are found
                     max_iter = min(max_iter,DJISTA_ITERS_AFTER_DEST_FOUND);
                 }
             }
-            for(Edge & e : graph[mintime.n].edges){
-                add_point(e,mintime);
+            for(Point ep : iter_scope(graph[mintime.p])){
+                if(ep != mintime.p){
+                    add_point(ep,graph[mintime.p][ep],mintime);
+                }
             }
         }
     }
     assert(early_stop && "ran out of places to look for dest");
-    return move_to_val;
 }
 /*
 bool djistra_test(){
@@ -339,24 +362,31 @@ bool djistra_test(){
             equal(min_path.begin(),min_path.end(),correct_path.begin());
 }*/
 template<int8_t tier>
-void set_move_speeds(vector<Node> & graph){
+void set_move_speeds(tier_ty & graph){
     for(Point P : iter_all<NUM_Ts[tier]>()){
         set_move_speed<tier>(P,graph);
     }
 }
 
-void set_move_costs(vector<Node> & graph){
-    set_move_speeds<0>(graph);
-    set_move_speeds<1>(graph);
-    set_move_speeds<2>(graph);
+void set_move_costs(graph_ty & graph){
+    set_move_speeds<0>(graph[0]);
+    set_move_speeds<1>(graph[1]);
+    set_move_speeds<2>(graph[2]);
 }
-vector<Node> reverse_graph(vector<Node> graph){
-    vector<Node> rev = graph;
-    for(size_t nn : range(graph.size())){
-        for(Edge & e : graph[nn].edges){
-            rev.at(e.dest).get_edge(nn).movecost = e.movecost;
-        }
+template<int8_t tier>
+void reverse_tier(tier_ty & rev_t,tier_ty & orig_t){
+    for(Point src : iter_all<NUM_Ts[tier]>()){
+        iter_around8<tier>(src,[&](Point dest){
+            rev_t[dest][src] = orig_t[src][dest];
+        });
     }
+}
+
+graph_ty reverse_graph(graph_ty & graph){
+    graph_ty rev = graph;
+    reverse_tier<0>(rev[0],graph[0]);
+    reverse_tier<1>(rev[1],graph[1]);
+    reverse_tier<2>(rev[2],graph[2]);
     return rev;
 }
 
@@ -364,49 +394,64 @@ void update_trans_invest(blocks & blks){
     
     set_move_costs(blks.graph);
     
-    vector<Edge *> all_edges;
-    for(Node & n : blks.graph){
-        for(Edge & e : n.edges){
-            all_edges.push_back(&e);
+    struct edge_data{
+        Point src;
+        Point dest;
+        Edge * e;
+    };
+    vector<edge_data> all_edges;
+    for(size_t tn : range(NUM_TIERS)){
+        tier_ty & t = blks.graph[tn];
+        for(Point src : PIterContainter(0,0,NUM_Ts[tn],NUM_Ts[tn])){
+            Node & n = t[src];
+            for(Point dest : iter_scope(n)){
+                if(dest != src){
+                    Edge & e = n[dest];
+                    all_edges.push_back(edge_data{src,dest,&e});
+                    e.marg_benefit_invest = 0;
+                }
+            }
+        }
+        for(Node & n : t.Arr){
+            for(Edge & e : n.Arr){
+            }
         }
     }
-    for(Edge * e : all_edges){
-        e->marg_benefit_invest = 0;
-    }
-    vector<Node> revgraph = reverse_graph(blks.graph);
+    graph_ty revgraph = reverse_graph(blks.graph);
     for(size_t pn : range(NUM_PEOPLE)){
         add_marginal_benefit(blks.pps.home[pn],blks.pps.work[pn],blks.graph,revgraph);
     }
-    std::sort(all_edges.begin(),all_edges.end(),[](Edge * one,Edge * other){
-        return one->marg_benefit_invest > other->marg_benefit_invest;
+    std::sort(all_edges.begin(),all_edges.end(),[](edge_data & one,edge_data & other){
+        return one.e->marg_benefit_invest > other.e->marg_benefit_invest;
     });
     //for any value of blks.inv_per_turn > 1 this corrupts the algoritm and makes
     //it produce unoptimal results, but it still does pretty well and also
     //goes that much faster
     for(size_t i = 0; i < blks.inv_per_turn;i++){
-        all_edges[i]->invest++;
+        all_edges[i].e->invest++;
     }
 }
 template<int8_t tier,typename fnty>
-void add_view_tier(count_ty & view,vector<Node> & graph,fnty add_fn){
-    for(size_t ni : range(tier_size_accum<tier-1>(),tier_size_accum<tier>())){
-        Node & n = graph[ni];
-        for(Edge e : n.edges){
-            Point start = base_cen<tier>(n.src);
-            Point end = base_cen<tier>(graph[e.dest].src);
+void add_view_tier(count_ty & view,tier_ty & graph,fnty add_fn){
+    for(Point src:iter_all<tier>()){
+        iter_around8<tier>(src,[&](Point dest){
+            Edge e = graph[src][dest];
+            
+            Point start = base_cen<tier>(src);
+            Point end = base_cen<tier>(dest);
             Point inc = (end - start) / int32_t(SIZE_Ts[tier]);
             for(Point P = start;P != end; P += inc){
                 view[P] += add_fn(e);
             }
-        }
+        });
     }
 }
 template<typename fnty>
-void set_view(count_ty & view,vector<Node> & graph,fnty add_fn){
+void set_view(count_ty & view,graph_ty & graph,fnty add_fn){
     view.assign(0);
-    add_view_tier<0>(view,graph,add_fn);
-    add_view_tier<1>(view,graph,add_fn);
-    add_view_tier<2>(view,graph,add_fn);    
+    add_view_tier<0>(view,graph[0],add_fn);
+    add_view_tier<1>(view,graph[1],add_fn);
+    add_view_tier<2>(view,graph[2],add_fn);    
 }
 
 void blocks::update_trans(){
