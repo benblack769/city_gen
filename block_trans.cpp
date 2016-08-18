@@ -123,7 +123,7 @@ tier_ty make_nodes(){
     return tier_g;
 }
 graph_ty make_graph(){
-    return graph_ty({make_nodes<0>(),make_nodes<1>(),make_nodes<2>()});
+    return graph_ty{{make_nodes<0>(),make_nodes<1>(),make_nodes<2>()}};
 }
 template<int8_t tier>
 startcosts upwards_moving_dists(movecosts & outcosts,Point tspot,startcosts & tm1_starts,tier_ty & graph){
@@ -230,7 +230,7 @@ void add_marginal_benefit(Point src,Point dest,graph_ty & graph,graph_ty & revgr
         for(Point src : iter_scope(f_mcs)){
             Node & srcnode = graph[tier][src];
             for(Point dest : iter_scope(srcnode)){
-                if(dest == src){
+                if(dest == src || !b_mcs.IsInScope(dest)){
                     continue;
                 }
                 move_cost_ty fval = f_mcs[src];
@@ -248,7 +248,7 @@ void add_marginal_benefit(Point src,Point dest,graph_ty & graph,graph_ty & revgr
                     move_cost_ty upgraded_cost = time_dif_upgrade(e.movecost,e.invest,e.dis);
                     move_cost_ty new_cost = upgraded_cost + mv_thr_cst_wo_edge;
                     move_cost_ty gained_time = min_cost - new_cost;
-                    if(gained_time > 0 && min_cost <= mv_thr_cst_wo_edge + e.movecost){
+                    if(gained_time > 0 && min_cost  * 0.999 <= bef_upg_cost){
                         e.marg_benefit_invest += gained_time;
                     }
                 }
@@ -415,10 +415,6 @@ void update_trans_invest(blocks & blks){
                 }
             }
         }
-        for(Node & n : t.Arr){
-            for(Edge & e : n.Arr){
-            }
-        }
     }
     graph_ty revgraph = reverse_graph(blks.graph);
     for(size_t pn : range(NUM_PEOPLE)){
@@ -436,7 +432,7 @@ void update_trans_invest(blocks & blks){
 }
 template<int8_t tier,typename fnty>
 void add_view_tier(count_ty & view,tier_ty & graph,fnty add_fn){
-    for(Point src:iter_all<tier>()){
+    for(Point src:iter_all<NUM_Ts[tier]>()){
         iter_around8<tier>(src,[&](Point dest){
             Edge e = graph[src][dest];
             
