@@ -25,7 +25,7 @@ struct Edge{
     move_cost_ty movecost = 0;//cached value caculated from investment
     move_cost_ty marg_benefit_invest = 0;
 };
-using Node = RangeArray<Edge>;
+using Node = RangeArray<Edge,array<Edge,9>>;
 
 using tier_ty = FArray2d<Node>;
 using graph_ty = array<tier_ty,NUM_TIERS>;
