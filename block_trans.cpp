@@ -24,6 +24,9 @@ using movecosts = RangeArray<move_cost_ty>;
 using tiered_movecosts = vector<movecosts>;
 using startcosts = vector<pointcost>;
 
+constexpr int POINT_ADJAC_FACTOR = 3;//if the point is a in an ajacent tile a tier above, then it looks a max distancce of this*UNDERLINGS_Ts[tier+1]
+constexpr int POINT_TIER_CHANGE = 2;//if moving a tier above or below, then it looks a max distancce of this*UNDERLINGS_Ts[tier(+/0)1]
+
 void djistras_algorithm(movecosts & output,startcosts & sources,nodeset & dests,tier_ty & graph);
 
 constexpr size_t UNDERLINGS_Ts[NUM_TIERS] = {1,TRANS_TIER_1_UNDERLINGS,TRANS_TIER_2_UNDERLINGS};
@@ -87,7 +90,7 @@ bool is_in_bordering_tier_rep(Point a,Point b){
 template<int8_t tier,typename data_ty>
 RangeArray<data_ty> make_ra(Point start,Point pastend){
     Point corner(max(start.X,0),max(start.Y,0));
-    Point end(min(pastend.X,int32_t(NUM_Ts[tier]),min(pastend.Y,int32_t(NUM_Ts[tier]))));
+    Point end(min(pastend.X,int32_t(NUM_Ts[tier])),min(pastend.Y,int32_t(NUM_Ts[tier])));
     Point size = end - corner;
     return RangeArray<data_ty>(corner,size.X,size.Y);
 }
@@ -166,20 +169,22 @@ startcosts downwards_moving_dists(movecosts & outcosts,startcosts & tsrcs,Point 
 }
 
 template<int8_t tier>
-void all_down_moving_dists(Point dest,movecosts srccosts,movecosts & accumvals,vector<Node> & graph){
-    movecosts downcosts = downwards_moving_dists<tier>(srccosts,tier_rep<tier>(dest),accumvals,graph);
+void all_down_moving_dists(Point dest,startcosts & srccosts,tiered_movecosts & accumvals,graph_ty & graph){
+    startcosts downcosts = downwards_moving_dists<tier>(accumvals.back(),srccosts,tier_rep<tier>(dest),graph[tier]);
+    accumvals.push_back(make_ra<tier,move_cost_ty>(tier_rep<tier-1>(dest),UNDERLINGS_Ts[tier]*POINT_TIER_CHANGE));
     all_down_moving_dists<tier-1>(dest,downcosts,accumvals,graph);
 }
 template<>
-void all_down_moving_dists<0>(Point dest,movecosts srccosts,movecosts & accumvals,vector<Node> & graph){
+void all_down_moving_dists<0>(Point dest,startcosts & srccosts,tiered_movecosts & accumvals,graph_ty & graph){
     nodeset dests({tieridx<0>(dest)});
     movecosts mv_to_dest_costs = djistras_algorithm(srccosts,dests,graph);
     accumvals.insert(mv_to_dest_costs.begin(),mv_to_dest_costs.end());
 }
 
 template<int8_t tier>
-void all_up_moving_dists(Point src,Point dest,movecosts srccosts,movecosts & accumvals,vector<Node> & graph){
+void all_up_moving_dists(Point src,Point dest,startcosts & srccosts,tiered_movecosts & accumvals,graph_ty & graph){
     if(is_in_bordering_tier_rep<tier+1>(src,dest)){
+        accumvals[tier] = movecosts(tier_rep<tier>(src),)
         all_down_moving_dists<tier>(dest,srccosts,accumvals,graph);
     }
     else{
@@ -188,11 +193,11 @@ void all_up_moving_dists(Point src,Point dest,movecosts srccosts,movecosts & acc
     }
 }
 template<>
-void all_up_moving_dists<NUM_TIERS-1>(Point ,Point dest,movecosts srccosts,movecosts & accumvals,vector<Node> & graph){
+void all_up_moving_dists<NUM_TIERS-1>(Point ,Point dest,startcosts & srccosts,tiered_movecosts & accumvals,graph_ty & graph){
     all_down_moving_dists<NUM_TIERS-1>(dest,srccosts,accumvals,graph);
 }
 
-movecosts move_costs(Point src,Point dest,vector<Node> & graph){
+movecosts move_costs(Point src,Point dest,graph_ty & graph){
     movecosts mcs;
 
     movecosts start;
