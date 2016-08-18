@@ -24,7 +24,7 @@ using movecosts = RangeArray<move_cost_ty>;
 using tiered_movecosts = vector<movecosts>;
 using startcosts = vector<pointcost>;
 
-constexpr int POINT_ADJAC_FACTOR = 4;//if the point is a in an ajacent tile a tier above, then it looks a max distancce of this*UNDERLINGS_Ts[tier+1]
+constexpr int POINT_ADJAC_FACTOR = WORLD_SIZE;//if the point is a in an ajacent tile a tier above, then it looks a max distancce of this*UNDERLINGS_Ts[tier+1]
 constexpr int POINT_TIER_CHANGE = 2;//if moving a tier above or below, then it looks a max distancce of this*UNDERLINGS_Ts[tier(+/0)1]
 
 void djistras_algorithm(movecosts & output,startcosts & sources,nodeset & dests,tier_ty & graph);
@@ -148,12 +148,10 @@ void set_move_speed(Point tspot,tier_ty & tier_g){
     for(pair<size_t,move_cost_ty> pointval : upwards_moving_dists<tier>(tspot,start)){
         graph[tieridx<tier>(tspot)].get_edge(pointval.first).movecost = pointval.second;
     }*/
-    for(Point src : iter_all<NUM_Ts[tier]>()){
-        iter_around8<tier>(tspot,[&](Point dest){
-            Edge & e = tier_g[src][dest];
-            e.movecost = invest_to_time(e.invest,e.dis);
-        });
-    }
+    iter_around8<tier>(tspot,[&](Point dest){
+        Edge & e = tier_g[tspot][dest];
+        e.movecost = invest_to_time(e.invest,e.dis);
+    });
 }
 
 template<int8_t tier>
@@ -176,7 +174,7 @@ startcosts downwards_moving_dists(movecosts & outcosts,startcosts & tsrcs,Point 
 template<int8_t tier>
 void all_down_moving_dists(Point dest,startcosts & srccosts,tiered_movecosts & accumvals,graph_ty & graph){
     startcosts downcosts = downwards_moving_dists<tier>(accumvals.back(),srccosts,tier_rep<tier>(dest),graph[tier]);
-    accumvals.push_back(make_ra<tier,move_cost_ty>(tier_rep<tier-1>(dest),UNDERLINGS_Ts[tier]*POINT_TIER_CHANGE));
+    accumvals.push_back(make_ra<tier-1,move_cost_ty>(tier_rep<tier-1>(dest),UNDERLINGS_Ts[tier]*POINT_TIER_CHANGE));
     all_down_moving_dists<tier-1>(dest,downcosts,accumvals,graph);
 }
 template<>
@@ -223,11 +221,14 @@ void add_marginal_benefit(Point src,Point dest,graph_ty & graph,graph_ty & revgr
     assert(forward_mcs.size() == backwards_mcs.size());
     const size_t move_size = forward_mcs.size();
     for(size_t mi = 0; mi < move_size; mi++){
+        size_t bmi = move_size-1-mi;
+        int64_t tier = int64_t(NUM_TIERS) - 1 - (abs(int64_t(mi)-int64_t(bmi)))/2 - (5 - move_size)/2;
+        
         movecosts f_mcs = forward_mcs[mi];
         movecosts b_mcs = backwards_mcs[move_size-1-mi];
         assert(SameScope(f_mcs,b_mcs));
         for(Point src : iter_scope(f_mcs)){
-            Node & srcnode = graph[mi][src];
+            Node & srcnode = graph[tier][src];
             for(Point dest : iter_scope(srcnode)){
                 if(dest == src){
                     continue;
@@ -299,14 +300,17 @@ void djistras_algorithm(movecosts & output,startcosts & sources,nodeset & dests,
             minheap.push(NodeVal{tot_val,dest});
         }
     };
+    //checks to see if dest is in scope
+    for(Point dest : dests){
+        assert(done.IsInScope(dest));
+    }
     //sets start values
     for(auto source : sources){
         assert(output.IsInScope(source.P));
         minheap.push(NodeVal{source.cost,source.P});
     }
     //main algorithm
-    bool early_stop = false;
-    for(size_t max_iter = done.size()-sources.size(); max_iter > 0 && minheap.size() > 0; max_iter--){
+    for(size_t max_iter = done.size()*8; max_iter > 0 && minheap.size() > 0; max_iter--){
         NodeVal mintime = minheap.top();
         minheap.pop();
         
@@ -318,7 +322,6 @@ void djistras_algorithm(movecosts & output,startcosts & sources,nodeset & dests,
             if(dest_iter != dests.end()){
                 dests.erase(dest_iter);
                 if(dests.size() == 0){
-                    early_stop = true;
                     //stops computation soon after dests are found
                     max_iter = min(max_iter,DJISTA_ITERS_AFTER_DEST_FOUND);
                 }
@@ -330,7 +333,7 @@ void djistras_algorithm(movecosts & output,startcosts & sources,nodeset & dests,
             }
         }
     }
-    assert(early_stop && "ran out of places to look for dest");
+    assert(dests.size() == 0 && "ran out of places to look for dest");
 }
 /*
 bool djistra_test(){
