@@ -432,18 +432,22 @@ void update_trans_invest(blocks & blks){
     int64_t start = uclock();
     vector<edge_data> all_edges;
     all_edges.reserve(8*(sqr(NUM_Ts[0])+sqr(NUM_Ts[1])+sqr(NUM_Ts[2])));
-    for(size_t tn : range(NUM_TIERS)){
-        tier_ty & t = blks.graph[tn];
-        for(Point src : PIterContainter(0,0,NUM_Ts[tn],NUM_Ts[tn])){
-            Node & n = t[src];
+    for(tier_ty & t : blks.graph){
+        for(Node & n : t.Arr){
             for(Point dest : iter_scope(n)){
-                if(dest != src){
+                if(dest != n.Corner+Point(1,1)){
                     Edge & e = n[dest];
                     all_edges.push_back(edge_data{e.marg_benefit_invest,&e});
                 }
             }
         }
     }
+    /*for(size_t tn : range(NUM_TIERS)){
+        tier_ty & t = blks.graph[tn];
+        for(Point src : PIterContainter(0,0,NUM_Ts[tn],NUM_Ts[tn])){
+            Node & n = t[src];
+        }
+    }*/
     std::sort(all_edges.begin(),all_edges.end(),[](edge_data & one,edge_data & other){
         return one.marg_ben > other.marg_ben;
     });
