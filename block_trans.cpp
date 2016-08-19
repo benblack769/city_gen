@@ -47,30 +47,26 @@ inline move_cost_ty time_dif_upgrade(move_cost_ty curtime,size_t cur_invest,floa
     return (curtime - (curtime * invest_to_speed(cur_invest)) / invest_to_speed(cur_invest+1))/dis;
 }
 
-template<int8_t tier>
-Point underling_cen(Point tspot){
+Point underling_cen(Point tspot,int8_t tier){
     int32_t add_to = UNDERLINGS_Ts[tier] / 2;
     Point tblock = tspot * UNDERLINGS_Ts[tier];
     return tblock + Point{add_to,add_to};
 }
-template<int8_t tier>
-Point overlord(Point tspot){
+Point overlord(Point tspot,int8_t tier){
     return tspot / UNDERLINGS_Ts[tier];
 }
-template<int8_t tier>
-Point tier_rep(Point boardspot){
+Point tier_rep(Point boardspot,int8_t tier){
     return boardspot / SIZE_Ts[tier];
 }
-template<int8_t tier>
-Point base_cen(Point tspot){
+Point base_cen(Point tspot,int8_t tier){
     int32_t add_to = SIZE_Ts[tier] / 2;
     Point tblock = tspot * SIZE_Ts[tier];
     return tblock + Point{add_to,add_to};
 }
 
-template<int8_t tier,typename fnty>
-void iter_around8(Point cen_p,fnty itfn){
-    for(Point P : iter_around<NUM_Ts[tier]>(cen_p,1)){
+template<typename fnty>
+void iter_around8(Point cen_p,int8_t tier,fnty itfn){
+    for(Point P : iter_around(cen_p,1,NUM_Ts[tier])){
         if(P != cen_p){
             itfn(P);
         }
@@ -79,37 +75,35 @@ void iter_around8(Point cen_p,fnty itfn){
 void print_p(Point p){
     cout << p.X  << "\t" << p.Y<< endl;
 }
-
-template<int8_t tier>
-bool is_in_bordering_tier_rep(Point a,Point b){
-    Point a_rep = tier_rep<tier>(a);
-    Point b_rep = tier_rep<tier>(b);
+bool is_in_bordering_tier_rep(Point a,Point b,int8_t tier){
+    Point a_rep = tier_rep(a,tier);
+    Point b_rep = tier_rep(b,tier);
     return abs(a_rep.X - b_rep.X) + abs(a_rep.Y - b_rep.Y) <= 2;
 }
 
-template<int8_t tier,typename data_ty>
-RangeArray<data_ty> make_ra_vec(Point start,Point pastend){
+template<typename data_ty>
+RangeArray<data_ty> make_ra_vec(Point start,Point pastend,int8_t tier){
     Point corner(max(start.X,0),max(start.Y,0));
     Point end(min(pastend.X,int32_t(NUM_Ts[tier])),min(pastend.Y,int32_t(NUM_Ts[tier])));
     Point size = end - corner;
     return RangeArray<data_ty>(corner,size.X,size.Y,vector<data_ty>(size.X*size.Y,data_ty()));
 }
-template<int8_t tier,typename data_ty>
-RangeArray<data_ty> make_ra_vec(Point cen,int range){
+template<typename data_ty>
+RangeArray<data_ty> make_ra_vec(Point cen,int range,int8_t tier){
     Point rangep = Point(range,range);
-    return make_ra_vec<tier,data_ty>(cen-rangep,cen+rangep+Point(1,1));
+    return make_ra_vec<data_ty>(cen-rangep,cen+rangep+Point(1,1),tier);
 }
-template<int8_t tier,typename data_ty>
-RangeArray<data_ty,array<data_ty,9>> make_ra_arr(Point start,Point pastend){
+template<typename data_ty>
+RangeArray<data_ty,array<data_ty,9>> make_ra_arr(Point start,Point pastend,int8_t tier){
     Point corner(max(start.X,0),max(start.Y,0));
     Point end(min(pastend.X,int32_t(NUM_Ts[tier])),min(pastend.Y,int32_t(NUM_Ts[tier])));
     Point size = end - corner;
     return RangeArray<data_ty,array<data_ty,9>>(corner,size.X,size.Y,array<data_ty,9>());
 }
-template<int8_t tier,typename data_ty>
-RangeArray<data_ty,array<data_ty,9>> make_ra_arr(Point cen){
+template<typename data_ty>
+RangeArray<data_ty,array<data_ty,9>> make_ra_arr(Point cen,int8_t tier){
     Point rangep = Point(1,1);
-    return make_ra_arr<tier,data_ty>(cen-rangep,cen+rangep+Point(1,1));
+    return make_ra_arr<data_ty>(cen-rangep,cen+rangep+Point(1,1),tier);
 }
 template<typename data_ty,typename cont_ty>
 PIterContainter iter_scope(const RangeArray<data_ty,cont_ty> & ra){
@@ -117,59 +111,52 @@ PIterContainter iter_scope(const RangeArray<data_ty,cont_ty> & ra){
     Point end = ra.Corner+Point(ra.XSize,ra.YSize);
     return PIterContainter(st.X,st.Y,end.X,end.Y);
 }
-template<int8_t tier>
-Node make_node(Point src){
-    Node node = make_ra_arr<tier,Edge>(src);
-    iter_around8<tier>(src,[&](Point dest){
-        node[dest].dis = distance(base_cen<tier>(src),base_cen<tier>(dest));
+Node make_node(Point src,int8_t tier){
+    Node node = make_ra_arr<Edge>(src,tier);
+    iter_around8(src,tier,[&](Point dest){
+        node[dest].dis = distance(base_cen(src,tier),base_cen(dest,tier));
     });
     return node;
 }
-template<int8_t tier>
-tier_ty make_nodes(){
-    constexpr size_t num_sqrs = NUM_Ts[tier];
+tier_ty make_nodes(int8_t tier){
+    size_t num_sqrs = NUM_Ts[tier];
     tier_ty tier_g(num_sqrs,num_sqrs);
-    for(Point P : iter_all<num_sqrs>()){
-        tier_g[P] = make_node<tier>(P);
+    for(Point P : iter_all(num_sqrs)){
+        tier_g[P] = make_node(P,tier);
     }
     return tier_g;
 }
 graph_ty make_graph(){
-    return graph_ty{{make_nodes<0>(),make_nodes<1>(),make_nodes<2>()}};
+    return graph_ty{{make_nodes(0),make_nodes(1),make_nodes(2)}};
 }
-template<int8_t tier>
-startcosts upwards_moving_dists(movecosts & outcosts,Point tspot,startcosts & tm1_starts,tier_ty & graph){
+startcosts upwards_moving_dists(movecosts & outcosts,Point tspot,startcosts & tm1_starts,tier_ty & graph,int8_t tier){
     nodeset dests;
-    iter_around8<tier>(tspot,[&](Point P){
-        dests.push_back(underling_cen<tier>(P));
+    iter_around8(tspot,tier,[&](Point P){
+        dests.push_back(underling_cen(P,tier));
     });
     movecosts & tm1_dists = outcosts;
     djistras_algorithm(tm1_dists,tm1_starts,dests,graph);
 
     startcosts tdists;
-    iter_around8<tier>(tspot,[&](Point P){
-        tdists.push_back(pointcost{P,tm1_dists.at(underling_cen<tier>(P))});
+    iter_around8(tspot,tier,[&](Point P){
+        tdists.push_back(pointcost{P,tm1_dists.at(underling_cen(P,tier))});
     });
     return tdists;
 }
-
-template<int8_t tier>
-void set_move_speed(Point tspot,tier_ty & tier_g){
+void set_move_speed(Point tspot,tier_ty & tier_g,int8_t tier){
     /*movecosts start;
     start[underling_cen_idx<tier>(tspot)] = 0;
     for(pair<size_t,move_cost_ty> pointval : upwards_moving_dists<tier>(tspot,start)){
         graph[tieridx<tier>(tspot)].get_edge(pointval.first).movecost = pointval.second;
     }*/
-    iter_around8<tier>(tspot,[&](Point dest){
+    iter_around8(tspot,tier,[&](Point dest){
         Edge & e = tier_g[tspot][dest];
         e.movecost = invest_to_time(e.invest,e.dis);
     });
 }
-
-template<int8_t tier>
-startcosts downwards_moving_dists(movecosts & outcosts,startcosts & tsrcs,Point tdest,tier_ty & graph){
+startcosts downwards_moving_dists(movecosts & outcosts,startcosts & tsrcs,Point tdest,tier_ty & graph,int8_t tier){
     nodeset dests;
-    iter_around8<tier>(tdest,[&](Point P){
+    iter_around8(tdest,tier,[&](Point P){
         dests.push_back(P);
     });
     
@@ -177,48 +164,42 @@ startcosts downwards_moving_dists(movecosts & outcosts,startcosts & tsrcs,Point 
     djistras_algorithm(tcosts,tsrcs,dests,graph);
 
     startcosts tm1_costs;
-    iter_around8<tier>(tdest,[&](Point P){
-        tm1_costs.push_back(pointcost{underling_cen<tier>(P),tcosts.at(P)});
+    iter_around8(tdest,tier,[&](Point P){
+        tm1_costs.push_back(pointcost{underling_cen(P,tier),tcosts.at(P)});
     });
     return tm1_costs;
 }
 
-template<int8_t tier>
-void all_down_moving_dists(Point dest,startcosts & srccosts,tiered_movecosts & accumvals,graph_ty & graph){
-    startcosts downcosts = downwards_moving_dists<tier>(accumvals.back(),srccosts,tier_rep<tier>(dest),graph[tier]);
-    accumvals.push_back(make_ra_vec<tier-1,move_cost_ty>(tier_rep<tier-1>(dest),UNDERLINGS_Ts[tier]*POINT_TIER_CHANGE));
-    all_down_moving_dists<tier-1>(dest,downcosts,accumvals,graph);
+void all_down_moving_dists(Point dest,startcosts & srccosts,tiered_movecosts & accumvals,graph_ty & graph,int8_t tier){
+    if(tier == 0){
+        nodeset dests({dest});
+        djistras_algorithm(accumvals.back(),srccosts,dests,graph[0]);
+    }else{
+        startcosts downcosts = downwards_moving_dists(accumvals.back(),srccosts,tier_rep(dest,tier),graph[tier],tier);
+        accumvals.push_back(make_ra_vec<move_cost_ty>(tier_rep(dest,tier-1),UNDERLINGS_Ts[tier]*POINT_TIER_CHANGE,tier-1));
+        all_down_moving_dists(dest,downcosts,accumvals,graph,tier-1);
+    }
 }
-template<>
-void all_down_moving_dists<0>(Point dest,startcosts & srccosts,tiered_movecosts & accumvals,graph_ty & graph){
-    nodeset dests({dest});
-    djistras_algorithm(accumvals.back(),srccosts,dests,graph[0]);
-}
-
-template<int8_t tier>
-void all_up_moving_dists(Point src,Point dest,startcosts & srccosts,tiered_movecosts & accumvals,graph_ty & graph){
-    if(is_in_bordering_tier_rep<tier+1>(src,dest)){
-        accumvals.push_back(make_ra_vec<tier,move_cost_ty>(tier_rep<tier>(src),POINT_ADJAC_FACTOR*UNDERLINGS_Ts[tier+1]));
-        all_down_moving_dists<tier>(dest,srccosts,accumvals,graph);
+void all_up_moving_dists(Point src,Point dest,startcosts & srccosts,tiered_movecosts & accumvals,graph_ty & graph,int8_t tier){
+    if(tier == NUM_TIERS-1){
+        accumvals.push_back(make_ra_vec<move_cost_ty>(Point(0,0),Point(1,1)*NUM_Ts[tier],tier));
+        all_down_moving_dists(dest,srccosts,accumvals,graph,tier);
+    }
+    else if(is_in_bordering_tier_rep(src,dest,tier+1)){
+        accumvals.push_back(make_ra_vec<move_cost_ty>(tier_rep(src,tier),POINT_ADJAC_FACTOR*UNDERLINGS_Ts[tier+1],tier));
+        all_down_moving_dists(dest,srccosts,accumvals,graph,tier);
     }
     else{
-        accumvals.push_back(make_ra_vec<tier,move_cost_ty>(tier_rep<tier>(src),UNDERLINGS_Ts[tier+1]*POINT_TIER_CHANGE));
-        startcosts tiercosts = upwards_moving_dists<tier+1>(accumvals.back(),tier_rep<tier+1>(src),srccosts,graph[tier]);
-        all_up_moving_dists<tier+1>(src,dest,tiercosts,accumvals,graph);
+        accumvals.push_back(make_ra_vec<move_cost_ty>(tier_rep(src,tier),UNDERLINGS_Ts[tier+1]*POINT_TIER_CHANGE,tier));
+        startcosts tiercosts = upwards_moving_dists(accumvals.back(),tier_rep(src,tier+1),srccosts,graph[tier],tier+1);
+        all_up_moving_dists(src,dest,tiercosts,accumvals,graph,tier+1);
     }
 }
-template<>
-void all_up_moving_dists<NUM_TIERS-1>(Point ,Point dest,startcosts & srccosts,tiered_movecosts & accumvals,graph_ty & graph){
-    constexpr int8_t tier = NUM_TIERS-1;
-    accumvals.push_back(make_ra_vec<tier,move_cost_ty>(Point(0,0),Point(1,1)*NUM_Ts[tier]));
-    all_down_moving_dists<tier>(dest,srccosts,accumvals,graph);
-}
-
 tiered_movecosts move_costs(Point src,Point dest,graph_ty & graph){
     tiered_movecosts mcs;
 
     startcosts start({pointcost{src,0}});
-    all_up_moving_dists<0>(src,dest,start,mcs,graph);
+    all_up_moving_dists(src,dest,start,mcs,graph,0);
     return mcs;
 }
 void add_marginal_benefit(Point src,Point dest,graph_ty & graph,graph_ty & revgraph){
@@ -379,22 +360,20 @@ bool djistra_test(){
     return min_path.size() == correct_path.size() &&
             equal(min_path.begin(),min_path.end(),correct_path.begin());
 }*/
-template<int8_t tier>
-void set_move_speeds(tier_ty & graph){
-    for(Point P : iter_all<NUM_Ts[tier]>()){
-        set_move_speed<tier>(P,graph);
+void set_move_speeds(tier_ty & graph,int8_t tier){
+    for(Point P : iter_all(NUM_Ts[tier])){
+        set_move_speed(P,graph,tier);
     }
 }
 
 void set_move_costs(graph_ty & graph){
-    set_move_speeds<0>(graph[0]);
-    set_move_speeds<1>(graph[1]);
-    set_move_speeds<2>(graph[2]);
+    for(int8_t tier : range(NUM_TIERS)){
+        set_move_speeds(graph[tier],tier);
+    }
 }
-template<int8_t tier>
-void reverse_tier(tier_ty & rev_t,tier_ty & orig_t){
-    for(Point src : iter_all<NUM_Ts[tier]>()){
-        iter_around8<tier>(src,[&](Point dest){
+void reverse_tier(tier_ty & rev_t,tier_ty & orig_t,int8_t tier){
+    for(Point src : iter_all(NUM_Ts[tier])){
+        iter_around8(src,tier,[&](Point dest){
             rev_t[dest][src] = orig_t[src][dest];
         });
     }
@@ -402,9 +381,9 @@ void reverse_tier(tier_ty & rev_t,tier_ty & orig_t){
 
 graph_ty reverse_graph(graph_ty & graph){
     graph_ty rev = graph;
-    reverse_tier<0>(rev[0],graph[0]);
-    reverse_tier<1>(rev[1],graph[1]);
-    reverse_tier<2>(rev[2],graph[2]);
+    for(int8_t tier : range(NUM_TIERS)){
+        reverse_tier(rev[tier],graph[tier],tier);        
+    }
     return rev;
 }
 
@@ -460,14 +439,14 @@ void update_trans_invest(blocks & blks){
         all_edges[i].e->invest++;
     }
 }
-template<int8_t tier,typename fnty>
-void add_view_tier(count_ty & view,tier_ty & graph,fnty add_fn){
-    for(Point src:iter_all<NUM_Ts[tier]>()){
-        iter_around8<tier>(src,[&](Point dest){
+template<typename fnty>
+void add_view_tier(count_ty & view,tier_ty & graph,int8_t tier,fnty add_fn){
+    for(Point src:iter_all(NUM_Ts[tier])){
+        iter_around8(src,tier,[&](Point dest){
             Edge e = graph[src][dest];
             
-            Point start = base_cen<tier>(src);
-            Point end = base_cen<tier>(dest);
+            Point start = base_cen(src,tier);
+            Point end = base_cen(dest,tier);
             Point inc = (end - start) / int32_t(SIZE_Ts[tier]);
             for(Point P = start;P != end; P += inc){
                 view[P] += add_fn(e);
@@ -478,9 +457,9 @@ void add_view_tier(count_ty & view,tier_ty & graph,fnty add_fn){
 template<typename fnty>
 void set_view(count_ty & view,graph_ty & graph,fnty add_fn){
     view.assign(0);
-    add_view_tier<0>(view,graph[0],add_fn);
-    add_view_tier<1>(view,graph[1],add_fn);
-    add_view_tier<2>(view,graph[2],add_fn);    
+    for(int8_t tier : range(NUM_TIERS)){
+        add_view_tier(view,graph[tier],tier,add_fn);
+    }  
 }
 
 void blocks::update_trans(){
