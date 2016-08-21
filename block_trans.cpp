@@ -29,25 +29,25 @@ constexpr int POINT_TIER_CHANGE = 2;//if moving a tier above or below, then it l
 
 void djistras_algorithm(movecosts & output, startcosts & sources, nodeset & dests, tier_ty & graph, int8_t tier);
 
-constexpr size_t UNDERLINGS_Ts[NUM_TIERS] = {1,TRANS_TIER_1_UNDERLINGS,TRANS_TIER_2_UNDERLINGS};
-constexpr size_t SIZE_Ts[NUM_TIERS] = {1,TRANS_TIER_1_UNDERLINGS,TRANS_TIER_1_UNDERLINGS * TRANS_TIER_2_UNDERLINGS};
-constexpr size_t NUM_Ts[NUM_TIERS] = {WORLD_SIZE / SIZE_Ts[0],WORLD_SIZE / SIZE_Ts[1],WORLD_SIZE / SIZE_Ts[2]};
+constexpr size_t UNDERLINGS_Ts[] = {1,TRANS_TIER_1_UNDERLINGS,TRANS_TIER_2_UNDERLINGS};
+constexpr size_t SIZE_Ts[] = {1,TRANS_TIER_1_UNDERLINGS,TRANS_TIER_1_UNDERLINGS * TRANS_TIER_2_UNDERLINGS};
+constexpr size_t NUM_Ts[] = {WORLD_SIZE / SIZE_Ts[0],WORLD_SIZE / SIZE_Ts[1],WORLD_SIZE / SIZE_Ts[2]};
 
 inline float distance(Point a,Point b){
     return sqrt(sqr(a.X-b.X) + sqr(a.Y-b.Y));
 }
 static const move_cost_ty MAX_COST =1LL<<28;
 inline uint32_t invest_to_speed(uint32_t invest){
-    return (invest + 1);//change this, change speed_to_inv!!!!!!!!
+    return (invest*1 + 1);//change this, change speed_to_inv!!!!!!!!
 }
-inline uint32_t speed_to_invest(uint32_t speed){
-    return speed - 1;//change this, change invest_to_speed!!!!!!!!
+inline float speed_to_invest(float speed){
+    return (speed - 1)/1;//change this, change invest_to_speed!!!!!!!!
 }
 inline move_cost_ty invest_to_time(uint32_t invest,float dis){
     return move_cost_ty(1.0)*dis / invest_to_speed(invest);
 }
 inline move_cost_ty time_dif_upgrade(move_cost_ty curtime,float dis){
-    uint32_t aprox_speed = round(curtime/dis);
+    float aprox_speed = curtime/dis;
     uint32_t cur_invest = speed_to_invest(aprox_speed);
     return (curtime - (curtime * invest_to_speed(cur_invest)) / invest_to_speed(cur_invest+1))/dis;
 }
@@ -247,15 +247,15 @@ void iterate_benefits(movecosts & fcosts,movecosts & bcosts,move_cost_ty min_cos
                 
                 move_cost_ty mv_thr_cst_wo_edge = fval + bval;
                 move_cost_ty bef_upg_cost = mv_thr_cst_wo_edge + edge_mc;
-                if(min_cost * 0.999 > bef_upg_cost){
+                if(min_cost * 0.99 > bef_upg_cost){
                 //    cout << "  mincost_error! ";
                 }
-                assert(bef_upg_cost >= min_cost*0.999 && "min cost not smallest cost!");
+                assert(bef_upg_cost >= min_cost*0.99 && "min cost not smallest cost!");
                 
                 move_cost_ty upgraded_cost = time_dif_upgrade(edge_mc,distance(base_cen(src,tier),base_cen(dest,tier)));
                 move_cost_ty new_cost = upgraded_cost + mv_thr_cst_wo_edge;
                 move_cost_ty gained_time = min_cost - new_cost;
-                if(gained_time > 0 && min_cost  * 0.999 <= bef_upg_cost){
+                if(gained_time > 0 && min_cost  * 0.99 <= bef_upg_cost){
                     mb_inv_fn(src,dest,gained_time);
                 }
             }
@@ -264,7 +264,6 @@ void iterate_benefits(movecosts & fcosts,movecosts & bcosts,move_cost_ty min_cos
 }
 
 void move_mcs_down(Point tsrc,Point tdest,tier_ty & prevgraph,tier_ty & prevrevgraph,tier_ty & prevmarg_ben,tier_ty & tmarg_ben,int8_t tier){
-    move_cost_ty edge_marg_ben = tmarg_ben[tsrc][tdest];
     
     movecosts fcosts = move_out_costs(tsrc,prevgraph,tier);
     movecosts bcosts = move_out_costs(tdest,prevrevgraph,tier);
@@ -277,10 +276,19 @@ void move_mcs_down(Point tsrc,Point tdest,tier_ty & prevgraph,tier_ty & prevrevg
     move_cost_ty min_fcost = fcosts[tm1dest];
     move_cost_ty min_bcost = bcosts[tm1src];
     assert(abs(min_fcost - min_bcost) < 0.1);//todo: make this more stable for higher numbers!!!!
-    
+
+    Point maxsrc,maxdest;
+    move_cost_ty max_ben = 0;
     iterate_benefits(fcosts,bcosts,min_fcost,prevgraph,tier-1,[&](Point margsrc,Point margdest,move_cost_ty marg_ben){
-        prevmarg_ben[margsrc][margdest] += marg_ben * edge_marg_ben;
+        if(marg_ben > max_ben){
+            max_ben = marg_ben;
+            maxsrc = margsrc;
+            maxdest = margdest;
+        }
     });
+    if(max_ben != 0){
+        prevmarg_ben[maxsrc][maxdest] += tmarg_ben[tsrc][tdest];
+    }
 }
 void move_mcs_down(graph_ty & graph,graph_ty & revgraph,graph_ty & marg_ben){
     for(int8_t tier = NUM_TIERS-1; tier >= 1; tier--){
@@ -292,7 +300,7 @@ void move_mcs_down(graph_ty & graph,graph_ty & revgraph,graph_ty & marg_ben){
     }
 }
 
-void add_marginal_benefit(Point src,Point dest,graph_ty & graph,graph_ty & revgraph,graph_ty & marg_ben_g){
+void add_marginal_benefit(Point src,Point dest,graph_ty & graph,graph_ty & revgraph,graph_ty & marg_ben_g,graph_data<uint32_t> & popcount){
     //revgraph is identical to graph, but the edge movecosts are swapped between the paired edges.
     tiered_movecosts forward_mcs = move_costs(src,dest,graph);
     tiered_movecosts backwards_mcs = move_costs(dest,src,revgraph);
@@ -305,7 +313,7 @@ void add_marginal_benefit(Point src,Point dest,graph_ty & graph,graph_ty & revgr
     const size_t move_size = forward_mcs.size();
     for(size_t mi = 0; mi < move_size; mi++){
         size_t bmi = move_size-1-mi;
-        int8_t tier = int64_t(NUM_TIERS) - 1 - (abs(int64_t(mi)-int64_t(bmi)))/2 - (5 - move_size)/2;
+        int8_t tier = int64_t(NUM_TIERS) - 1 - (abs(int64_t(mi)-int64_t(bmi)))/2 - (NUM_TIERS*2 - 1 - move_size)/2;
         
         movecosts & f_mcs = forward_mcs[mi];
         movecosts & b_mcs = backwards_mcs[move_size-1-mi];
@@ -313,6 +321,7 @@ void add_marginal_benefit(Point src,Point dest,graph_ty & graph,graph_ty & revgr
         
         iterate_benefits(f_mcs,b_mcs,min_cost,graph[tier],tier,[&](Point src,Point dest,move_cost_ty marg_ben){
             marg_ben_g[tier][src][dest] += marg_ben;
+            popcount[tier][src][dest]++;
         });
     }
 }
@@ -441,10 +450,11 @@ graph_ty reverse_graph(graph_ty & graph){
     }
     return rev;
 }
-graph_ty init_marg_ben(){
-    graph_ty graph;
+template<typename data_ty>
+graph_data<data_ty> zero_graph(){
+    graph_data<data_ty> graph;
     for(int8_t tier : range(NUM_TIERS)){
-        graph[tier] = make_tier<move_cost_ty>(0,[](Point ,Point ){return 0;});
+        graph[tier] = make_tier<data_ty>(tier,[](Point ,Point ){return 0;});
     }
     return graph;
 }
@@ -454,10 +464,11 @@ void update_trans_invest(blocks & blks,graph_ty & marg_ben){
     graph_ty graph = graph_costs(blks.trans_invest);
     graph_ty revgraph = reverse_graph(graph);
     
+    graph_data<uint32_t> popcount = zero_graph<uint32_t>();
     for(size_t pn : range(NUM_PEOPLE)){
-        add_marginal_benefit(blks.pps.home[pn],blks.pps.work[pn],graph,revgraph,marg_ben);
+        add_marginal_benefit(blks.pps.home[pn],blks.pps.work[pn],graph,revgraph,marg_ben,popcount);
     }
-    move_mcs_down(graph,revgraph,marg_ben);
+    move_mcs_down(graph,revgraph,marg_ben,popcount);
     
     struct edge_cost{
         Point src;
@@ -498,7 +509,7 @@ void set_view(count_ty & view,tier_data<data_ty> & data){
 void blocks::update_trans(){
     djiks_t = 0;
     int64_t start = uclock();
-    graph_ty marg_ben = init_marg_ben();
+    graph_ty marg_ben = zero_graph<move_cost_ty>();
     update_trans_invest(*this,marg_ben);
     int64_t end = uclock() - start;
     cout << "dijik: \t\t" << djiks_t << endl;
