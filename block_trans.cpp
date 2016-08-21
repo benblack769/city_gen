@@ -13,6 +13,12 @@
 #include "parrelell.h"
 #include "test.h"
 
+#define NDEBUG
+#ifdef NDEBUG
+#undef assert
+#define assert(arg) 
+#endif
+
 struct pointcost{
     Point P;
     move_cost_ty cost;
@@ -37,19 +43,19 @@ inline float distance(Point a,Point b){
     return sqrt(sqr(a.X-b.X) + sqr(a.Y-b.Y));
 }
 static const move_cost_ty MAX_COST =1LL<<28;
-inline uint32_t invest_to_speed(uint32_t invest){
-    return (invest*1 + 1);//change this, change speed_to_inv!!!!!!!!
+inline float invest_to_speed(uint32_t invest,float dis){
+    return (invest + 1)/dis;//change this, change speed_to_inv!!!!!!!!
 }
-inline float speed_to_invest(float speed){
-    return (speed - 1)/1;//change this, change invest_to_speed!!!!!!!!
+inline float speed_to_invest(float speed,float dis){
+    return (speed*dis - 1);//change this, change invest_to_speed!!!!!!!!
 }
 inline move_cost_ty invest_to_time(uint32_t invest,float dis){
-    return move_cost_ty(1.0)*dis / invest_to_speed(invest);
+    return move_cost_ty(1.0)*dis / invest_to_speed(invest,dis);
 }
 inline move_cost_ty time_dif_upgrade(move_cost_ty curtime,float dis){
     float aprox_speed = curtime/dis;
-    uint32_t cur_invest = speed_to_invest(aprox_speed);
-    return (curtime - (curtime * invest_to_speed(cur_invest)) / invest_to_speed(cur_invest+1))/dis;
+    uint32_t cur_invest = roundf(speed_to_invest(aprox_speed,dis));
+    return (curtime - (curtime * invest_to_speed(cur_invest,dis)) / invest_to_speed(cur_invest+1,dis));
 }
 Point underling_cen(Point tspot,int8_t tier){
     int32_t add_to = UNDERLINGS_Ts[tier] / 2;
@@ -132,8 +138,21 @@ tier_data<edge_ty> make_tier(int8_t tier,fn_ty init_fn){
     }
     return res;
 }
+template<typename data_ty>
+tier_data<data_ty> zero_tier(int8_t tier){
+    return make_tier<data_ty>(tier,[](Point ,Point ){return 0;});
+}
+
+template<typename data_ty>
+graph_data<data_ty> zero_graph(){
+    graph_data<data_ty> graph;
+    for(int8_t tier : range(NUM_TIERS)){
+        graph[tier] = zero_tier<data_ty>(tier);
+    }
+    return graph;
+}
 board_inv_ty init_trans_inv(){
-    return make_tier<uint32_t>(0,[](Point ,Point ){return 0;});
+    return zero_tier<uint32_t>(0);
 }
 tier_ty board_costs(board_inv_ty & invest){
     return make_tier<move_cost_ty>(0,[&](Point src,Point dest){
@@ -290,17 +309,31 @@ void move_mcs_down(Point tsrc,Point tdest,tier_ty & prevgraph,tier_ty & prevrevg
         prevmarg_ben[maxsrc][maxdest] += tmarg_ben[tsrc][tdest];
     }
 }
-void move_mcs_down(graph_ty & graph,graph_ty & revgraph,graph_ty & marg_ben){
-    for(int8_t tier = NUM_TIERS-1; tier >= 1; tier--){
-        for(Point src : iter_all(NUM_Ts[tier])){
-            iter_around8(src,tier,[&](Point dest){
-                move_mcs_down(src,dest,graph[tier-1],revgraph[tier-1],marg_ben[tier-1],marg_ben[tier],tier);
-            });
+Point point_loc(size_t iter_num,int8_t tier){
+    size_t tier_size = NUM_Ts[tier];
+    return Point(iter_num%tier_size,iter_num/tier_size);
+}
+void add_together(tier_ty & to,const tier_ty & add){
+    for(int ni : range(to.size())){
+        for(int ei : range(9)){
+            to.Arr[ni].Arr[ei] += add.Arr[ni].Arr[ei];
         }
     }
 }
+void move_mcs_down(graph_ty & graph,graph_ty & revgraph,graph_ty & marg_ben){
+    for(int8_t tier = NUM_TIERS-1; tier >= 1; tier--){
+        auto inc_fn = [&](tier_ty & marg_ben_m1,size_t pointidx){
+            Point src = point_loc(pointidx,tier);
+            
+            iter_around8(src,tier,[&](Point dest){
+                move_mcs_down(src,dest,graph[tier-1],revgraph[tier-1],marg_ben_m1,marg_ben[tier],tier);
+            });
+        };
+        add_together(marg_ben[tier-1],par_reduce(0,sqr(NUM_Ts[tier]),zero_tier<move_cost_ty>(tier-1),add_together,inc_fn));
+    }
+}
 
-void add_marginal_benefit(Point src,Point dest,graph_ty & graph,graph_ty & revgraph,graph_ty & marg_ben_g,graph_data<uint32_t> & popcount){
+void add_marginal_benefit(Point src,Point dest,graph_ty & graph,graph_ty & revgraph,graph_ty & marg_ben_g){
     //revgraph is identical to graph, but the edge movecosts are swapped between the paired edges.
     tiered_movecosts forward_mcs = move_costs(src,dest,graph);
     tiered_movecosts backwards_mcs = move_costs(dest,src,revgraph);
@@ -321,7 +354,6 @@ void add_marginal_benefit(Point src,Point dest,graph_ty & graph,graph_ty & revgr
         
         iterate_benefits(f_mcs,b_mcs,min_cost,graph[tier],tier,[&](Point src,Point dest,move_cost_ty marg_ben){
             marg_ben_g[tier][src][dest] += marg_ben;
-            popcount[tier][src][dest]++;
         });
     }
 }
@@ -450,13 +482,10 @@ graph_ty reverse_graph(graph_ty & graph){
     }
     return rev;
 }
-template<typename data_ty>
-graph_data<data_ty> zero_graph(){
-    graph_data<data_ty> graph;
-    for(int8_t tier : range(NUM_TIERS)){
-        graph[tier] = make_tier<data_ty>(tier,[](Point ,Point ){return 0;});
+void add_together_g(graph_ty & to,const graph_ty & add){
+    for(int i = 0; i < NUM_TIERS; i++){
+        add_together(to[i],add[i]);
     }
-    return graph;
 }
 
 void update_trans_invest(blocks & blks,graph_ty & marg_ben){
@@ -464,11 +493,10 @@ void update_trans_invest(blocks & blks,graph_ty & marg_ben){
     graph_ty graph = graph_costs(blks.trans_invest);
     graph_ty revgraph = reverse_graph(graph);
     
-    graph_data<uint32_t> popcount = zero_graph<uint32_t>();
-    for(size_t pn : range(NUM_PEOPLE)){
-        add_marginal_benefit(blks.pps.home[pn],blks.pps.work[pn],graph,revgraph,marg_ben,popcount);
-    }
-    move_mcs_down(graph,revgraph,marg_ben,popcount);
+    marg_ben = par_reduce(0,NUM_PEOPLE,zero_graph<move_cost_ty>(),add_together_g,[&](graph_ty & thread_marg_ben,size_t pn){
+            add_marginal_benefit(blks.pps.home[pn],blks.pps.work[pn],graph,revgraph,thread_marg_ben);
+    });
+    move_mcs_down(graph,revgraph,marg_ben);
     
     struct edge_cost{
         Point src;

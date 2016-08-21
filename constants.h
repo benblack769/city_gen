@@ -19,7 +19,7 @@ static_assert(TRANS_TIER_1_UNDERLINGS%2 == 1,"TRANS_TIER_1_UNDERLINGS must be od
 static_assert(TRANS_TIER_2_UNDERLINGS%2 == 1,"TRANS_TIER_2_UNDERLINGS must be odd");
 static_assert(WORLD_SIZE%(TRANS_TIER_1_UNDERLINGS*TRANS_TIER_2_UNDERLINGS) == 0,"WORLD_SIZE must a multiple of the tier underlings");
 
-constexpr size_t NUM_PEOPLE = 100;
+constexpr size_t NUM_PEOPLE = 1000;
 constexpr size_t HOME_WORK_MAX_DIS = 10000;
 
 
