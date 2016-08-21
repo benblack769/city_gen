@@ -13,8 +13,8 @@
 #include "parrelell.h"
 #include "test.h"
 
-#define NDEBUG
-#ifdef NDEBUG
+#define _____NDEBUG__
+#ifdef _____NDEBUG__
 #undef assert
 #define assert(arg) 
 #endif
@@ -31,7 +31,7 @@ using tiered_movecosts = vector<movecosts>;
 using startcosts = vector<pointcost>;
 
 constexpr int POINT_ADJAC_FACTOR = WORLD_SIZE*WORLD_SIZE;//if the point is a in an ajacent tile a tier above, then it looks a max distancce of this*UNDERLINGS_Ts[tier+1]
-constexpr int POINT_TIER_CHANGE = 2;//if moving a tier above or below, then it looks a max distancce of this*UNDERLINGS_Ts[tier(+/0)1]
+constexpr int POINT_TIER_CHANGE = 3;//if moving a tier above or below, then it looks a max distancce of this*UNDERLINGS_Ts[tier(+/0)1]
 
 void djistras_algorithm(movecosts & output, startcosts & sources, nodeset & dests, tier_ty & graph, int8_t tier);
 
@@ -39,23 +39,26 @@ constexpr size_t UNDERLINGS_Ts[] = {1,TRANS_TIER_1_UNDERLINGS,TRANS_TIER_2_UNDER
 constexpr size_t SIZE_Ts[] = {1,TRANS_TIER_1_UNDERLINGS,TRANS_TIER_1_UNDERLINGS * TRANS_TIER_2_UNDERLINGS};
 constexpr size_t NUM_Ts[] = {WORLD_SIZE / SIZE_Ts[0],WORLD_SIZE / SIZE_Ts[1],WORLD_SIZE / SIZE_Ts[2]};
 
-inline float distance(Point a,Point b){
+inline double distance(Point a,Point b){
     return sqrt(sqr(a.X-b.X) + sqr(a.Y-b.Y));
 }
 static const move_cost_ty MAX_COST =1LL<<28;
-inline float invest_to_speed(uint32_t invest,float dis){
-    return (invest + 1)/dis;//change this, change speed_to_inv!!!!!!!!
+inline double invest_to_speed(int32_t invest,float dis){
+    return (invest/dis + 1);//change this, change speed_to_inv!!!!!!!!
 }
-inline float speed_to_invest(float speed,float dis){
-    return (speed*dis - 1);//change this, change invest_to_speed!!!!!!!!
+inline double speed_to_invest(double speed,float dis){
+    return (1 - speed)*dis;//change this, change invest_to_speed!!!!!!!!
 }
-inline move_cost_ty invest_to_time(uint32_t invest,float dis){
+inline move_cost_ty invest_to_time(int32_t invest,float dis){
     return move_cost_ty(1.0)*dis / invest_to_speed(invest,dis);
 }
 inline move_cost_ty time_dif_upgrade(move_cost_ty curtime,float dis){
-    float aprox_speed = curtime/dis;
-    uint32_t cur_invest = roundf(speed_to_invest(aprox_speed,dis));
-    return (curtime - (curtime * invest_to_speed(cur_invest,dis)) / invest_to_speed(cur_invest+1,dis));
+    double aprox_speed = curtime/dis;
+    double finv = speed_to_invest(aprox_speed,dis);
+    int32_t cur_invest = finv;
+    double speed = invest_to_speed(cur_invest,dis);
+    move_cost_ty time_dif = (curtime - (curtime * invest_to_speed(cur_invest,dis)) / invest_to_speed(cur_invest+1,dis));
+    return time_dif;
 }
 Point underling_cen(Point tspot,int8_t tier){
     int32_t add_to = UNDERLINGS_Ts[tier] / 2;
@@ -152,7 +155,7 @@ graph_data<data_ty> zero_graph(){
     return graph;
 }
 board_inv_ty init_trans_inv(){
-    return zero_tier<uint32_t>(0);
+    return zero_tier<int32_t>(0);
 }
 tier_ty board_costs(board_inv_ty & invest){
     return make_tier<move_cost_ty>(0,[&](Point src,Point dest){
@@ -170,7 +173,7 @@ startcosts upwards_moving_dists(movecosts & outcosts,Point tspot,startcosts & tm
 
     startcosts tdists;
     iter_around8(tspot,tier,[&](Point P){
-        tdists.push_back(pointcost{P,tm1_dists.at(underling_cen(P,tier))});
+        tdists.push_back(pointcost{P,tm1_dists[underling_cen(P,tier)]});
     });
     return tdists;
 }
@@ -185,7 +188,7 @@ startcosts downwards_moving_dists(movecosts & outcosts,startcosts & tsrcs,Point 
 
     startcosts tm1_costs;
     iter_around8(tdest,tier,[&](Point P){
-        tm1_costs.push_back(pointcost{underling_cen(P,tier),tcosts.at(P)});
+        tm1_costs.push_back(pointcost{underling_cen(P,tier),tcosts[P]});
     });
     return tm1_costs;
 }
@@ -266,15 +269,12 @@ void iterate_benefits(movecosts & fcosts,movecosts & bcosts,move_cost_ty min_cos
                 
                 move_cost_ty mv_thr_cst_wo_edge = fval + bval;
                 move_cost_ty bef_upg_cost = mv_thr_cst_wo_edge + edge_mc;
-                if(min_cost * 0.99 > bef_upg_cost){
-                //    cout << "  mincost_error! ";
-                }
                 assert(bef_upg_cost >= min_cost*0.99 && "min cost not smallest cost!");
                 
                 move_cost_ty upgraded_cost = time_dif_upgrade(edge_mc,distance(base_cen(src,tier),base_cen(dest,tier)));
                 move_cost_ty new_cost = upgraded_cost + mv_thr_cst_wo_edge;
                 move_cost_ty gained_time = min_cost - new_cost;
-                if(gained_time > 0 && min_cost  * 0.99 <= bef_upg_cost){
+                if(gained_time > 0){
                     mb_inv_fn(src,dest,gained_time);
                 }
             }
@@ -403,6 +403,7 @@ void djistras_algorithm(movecosts & output,startcosts & sources,nodeset & dests,
             minheap.push(NodeVal{tot_val,dest});
         }
     };
+    assert(output.size() >= NUM_Ts[tier]/4);
     //checks to see if dest is in scope
     for(Point dest : dests){
         assert(done.IsInScope(dest));

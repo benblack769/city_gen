@@ -27,7 +27,7 @@ using Node = SqrData<move_cost_ty>;
 using tier_ty = tier_data<move_cost_ty>;
 using graph_ty = graph_data<move_cost_ty>;
 
-using NodeInv = SqrData<uint32_t>;
+using NodeInv = SqrData<int32_t>;
 using board_inv_ty = FArray2d<NodeInv>;
 
 
