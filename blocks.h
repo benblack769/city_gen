@@ -2,17 +2,8 @@
 #include "constants.h"
 #include "people.h"
 #include "firms.h"
-#include <headerlib/Array2d.hpp>
 #include "block_trans.h"
 
-template<typename obj_ty>
-class board:
-        public FArray2d<obj_ty>{
-public:
-    board(obj_ty initval=obj_ty()):
-        FArray2d<obj_ty>(WORLD_SIZE,WORLD_SIZE,initval){
-    }
-};
 //
 //static version of above
 //
@@ -57,7 +48,7 @@ public:
     count_ty trans_invest_view;
     count_ty upgrade_vs_view;
     
-    graph_ty graph;
+    board_inv_ty trans_invest;
 
     blocks();
     static constexpr size_t arrsize(){

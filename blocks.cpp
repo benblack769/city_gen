@@ -11,7 +11,7 @@
 void init_info(people & pps);
 
 blocks::blocks():
-    graph(make_graph())
+    trans_invest(init_trans_inv())
 {
     init_info(pps);
 }

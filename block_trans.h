@@ -16,19 +16,21 @@ using namespace std;
 
 using move_cost_ty = float;
 
-struct Edge{
-    Edge(float indis=0):
-        dis(indis){
-    }
-    uint32_t invest = 0;
-    float dis;
-    move_cost_ty movecost = 0;//cached value caculated from investment
-    move_cost_ty marg_benefit_invest = 0;
-};
-using Node = RangeArray<Edge,array<Edge,9>>;
+template <typename data_ty>
+using SqrData = RangeArray<data_ty,array<data_ty,9>>;
+template <typename data_ty>
+using tier_data = FArray2d<SqrData<data_ty>>;
+template <typename data_ty>
+using graph_data = array<tier_data<data_ty>,NUM_TIERS>;
 
-using tier_ty = FArray2d<Node>;
-using graph_ty = array<tier_ty,NUM_TIERS>;
+using Node = SqrData<move_cost_ty>;
+using tier_ty = tier_data<move_cost_ty>;
+using graph_ty = graph_data<move_cost_ty>;
 
-graph_ty make_graph();
+using NodeInv = SqrData<uint32_t>;
+using board_inv_ty = FArray2d<NodeInv>;
+
+
+
+board_inv_ty init_trans_inv();
 

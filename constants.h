@@ -3,6 +3,7 @@
 #include <headerlib/point.hpp>
 #include <vector>
 #include <ctime>
+#include <headerlib/Array2d.hpp>
 
 using namespace std;
 
@@ -10,15 +11,15 @@ using namespace std;
 //#define EXEC_PARRELELL
 
 constexpr size_t NUM_TIERS = 3;//implicitly there is at least 1 tier
-constexpr size_t TRANS_TIER_1_UNDERLINGS = 7;
-constexpr size_t TRANS_TIER_2_UNDERLINGS = 7;
-constexpr size_t WORLD_SIZE = TRANS_TIER_2_UNDERLINGS*TRANS_TIER_1_UNDERLINGS*12;
+constexpr size_t TRANS_TIER_1_UNDERLINGS = 5;
+constexpr size_t TRANS_TIER_2_UNDERLINGS = 5;
+constexpr size_t WORLD_SIZE = TRANS_TIER_2_UNDERLINGS*TRANS_TIER_1_UNDERLINGS*5;
 
 static_assert(TRANS_TIER_1_UNDERLINGS%2 == 1,"TRANS_TIER_1_UNDERLINGS must be odd");
 static_assert(TRANS_TIER_2_UNDERLINGS%2 == 1,"TRANS_TIER_2_UNDERLINGS must be odd");
 static_assert(WORLD_SIZE%(TRANS_TIER_1_UNDERLINGS*TRANS_TIER_2_UNDERLINGS) == 0,"WORLD_SIZE must a multiple of the tier underlings");
 
-constexpr size_t NUM_PEOPLE = 200;
+constexpr size_t NUM_PEOPLE = 20;
 constexpr size_t HOME_WORK_MAX_DIS = 10000;
 
 
@@ -68,6 +69,15 @@ template<class numty>
 inline numty sqr(numty num){
     return num * num;
 }
+
+template<typename obj_ty>
+class board:
+        public FArray2d<obj_ty>{
+public:
+    board(obj_ty initval=obj_ty()):
+        FArray2d<obj_ty>(WORLD_SIZE,WORLD_SIZE,initval){
+    }
+};
 
 inline int64_t uclock() {
 #ifdef __linux__ 
