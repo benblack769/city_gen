@@ -10,7 +10,7 @@ using namespace std;
 //#define RUN_TESTS
 //#define EXEC_PARRELELL
 
-constexpr size_t NUM_TIERS = 3;//implicitly there is at least 1 tier
+constexpr size_t NUM_TIERS = 1;//implicitly there is at least 1 tier
 constexpr size_t TRANS_TIER_1_UNDERLINGS = 5;
 constexpr size_t TRANS_TIER_2_UNDERLINGS = 5;
 constexpr size_t WORLD_SIZE = TRANS_TIER_2_UNDERLINGS*TRANS_TIER_1_UNDERLINGS*8;
