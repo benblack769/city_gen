@@ -56,7 +56,7 @@ This algorithm is a greedy algorithm, and as such is quite bad in certain scenar
 
 This is because it will always be more advantageous to invest in a road surrounding the region then in the middle of the region in this greedy algorithm, even though intuitively, we may eventually want it to build across the region because of decreasing returns of investment.
 
-A more perfect version of this algorithm will look further into the future when making these decisions, but it is already kind of slow.
+A more perfect version of this algorithm will look further into the future when making these decisions, but it is already kind of slow, so a traditional method like a random forest will probably be impractical.
 
 ### Performance
 
@@ -64,7 +64,7 @@ The code prints out timings for various parts of the algorithm onto the console.
 
 In order to address this some, I realized that there was a lot of overlap in the algorithm for different people taking long, but similar routes. So I created tiles which spanned many grid points which people would path across instead of the natural tiles. Then, after upgrade benefits are determined, I would figure out which natural tiles is the best to upgrade. While this does not have the same theoretical benefit of being a perfect greedy algorithm, it does work reasonably well, and also is theoretically `O(max(p*log(n)^2,n*log(n)))`, and is actually about 10 times faster for large grids (1000x1000).
 
-Here is an example of how it builds roads. Yellow squares show road construction densities.
+Here is an example of how it builds roads. Yellow squares show road construction densities. Note that the roads are primality built according to the shapes of these larger (25x25) tiles.
 
 ![tiled_network](https://raw.githubusercontent.com/weepingwillowben/city_gen/master/screenshots/tiled_network.PNG)
 
