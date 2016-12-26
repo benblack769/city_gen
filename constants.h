@@ -21,7 +21,6 @@ static_assert(WORLD_SIZE%(TRANS_TIER_1_UNDERLINGS*TRANS_TIER_2_UNDERLINGS) == 0,
 constexpr size_t NUM_PEOPLE = 200;
 constexpr size_t HOME_WORK_MAX_DIS = 10000;
 
-
 constexpr size_t DJISTA_ITERS_AFTER_DEST_FOUND = 1;//WORLD_SIZE;//WORLD_SIZE*WORLD_SIZE/16;
 
 const int max_slide = 20;
@@ -70,10 +69,10 @@ inline numty sqr(numty num){
 }
 
 inline int64_t uclock() {
-#ifdef __linux__ 
+#ifdef __linux__
     struct timespec te;
     clock_gettime(CLOCK_REALTIME,&te); // get current time
-    return te.tv_sec*1000000000LL + te.tv_nsec; 
+    return te.tv_sec*1000000000LL + te.tv_nsec;
 #else
     return clock()*1000000LL;
 #endif
