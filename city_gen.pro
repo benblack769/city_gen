@@ -18,23 +18,17 @@ INCLUDEPATH += ../../
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    gamescreen.cpp \
-    people.cpp \
-    firms.cpp \
-    blocks.cpp \
-    test.cpp \
-    block_trans.cpp
+    test.cpp
 
 HEADERS  += mainwindow.h \
     gamescreen.h \
     people.h \
-    firms.h \
     constants.h \
-    blocks.h \
     test.h \
-    parrelell.h \
     check_obj.h \
-    block_trans.h
+    infoholder.h \
+    world.h \
+    map.h
 
 FORMS    += mainwindow.ui
 

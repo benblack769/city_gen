@@ -5,7 +5,6 @@
 #include "constants.h"
 
 typedef bool (*test_fn)();
-bool djistra_test();
 
 class TestObj{
 public:
@@ -19,7 +18,6 @@ public:
     void fancy_print(std::string func_str);
     void collect_tests(){
 #define _add_test(testname) add_test(testname,#testname)
-        _add_test(djistra_test);
     }
 };
 

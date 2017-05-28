@@ -1,12 +1,13 @@
 #include <QMainWindow>
 #include <QTimer>
-#include "check_obj.h"
+#include <world.h>
 
 class QGraphicsView;
 class GameScreen;
+class QCheckBox;
 struct check_obj;
 
-constexpr size_t NUM_DISPLAYS = 4;
+constexpr size_t NUM_DISPLAYS = 1;
 namespace Ui {
 class MainWindow;
 }
@@ -21,10 +22,12 @@ public:
     
     void draw();
 protected:
+    World world;
     Ui::MainWindow *ui;
     QGraphicsView * veiw;
     GameScreen * screen;
-    check_obj chks[NUM_DISPLAYS];
+    QCheckBox * chks[NUM_DISPLAYS];
     QTimer frame_timer;
+    QTimer update_timer;
     QWidget * make_layout();
 };

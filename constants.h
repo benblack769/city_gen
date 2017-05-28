@@ -4,33 +4,17 @@
 #include <vector>
 #include <ctime>
 #include <headerlib/Array2d.hpp>
+#include <headerlib/RangeIterator.h>
 
 using namespace std;
 
 //#define RUN_TESTS
 //#define EXEC_PARRELELL
 
-constexpr size_t NUM_TIERS = 1;//implicitly there is at least 1 tier
-constexpr size_t TRANS_TIER_1_UNDERLINGS = 5;
-constexpr size_t TRANS_TIER_2_UNDERLINGS = 5;
-constexpr size_t WORLD_SIZE = TRANS_TIER_2_UNDERLINGS*TRANS_TIER_1_UNDERLINGS*8;
+constexpr size_t WORLD_SIZE = 400;
 
-static_assert(TRANS_TIER_1_UNDERLINGS%2 == 1,"TRANS_TIER_1_UNDERLINGS must be odd");
-static_assert(TRANS_TIER_2_UNDERLINGS%2 == 1,"TRANS_TIER_2_UNDERLINGS must be odd");
-static_assert(WORLD_SIZE%(TRANS_TIER_1_UNDERLINGS*TRANS_TIER_2_UNDERLINGS) == 0,"WORLD_SIZE must a multiple of the tier underlings");
+constexpr size_t NUM_PEOPLE = 50;
 
-constexpr size_t NUM_PEOPLE =50;
-constexpr size_t HOME_WORK_MAX_DIS = 10000;
-
-constexpr size_t DJISTA_ITERS_AFTER_DEST_FOUND = 1;//WORLD_SIZE;//WORLD_SIZE*WORLD_SIZE/16;
-
-const int max_slide = 20;
-const int max_time = 500;
-
-inline int slide_time(int slide){
-    //todo:change to proper logarithmic scale
-    return (slide *  max_time) / max_slide;
-}
 inline PIterContainter iter_all(size_t max_size=WORLD_SIZE){
     return PIterContainter(0,0,max_size,max_size);
 }
