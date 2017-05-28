@@ -5,15 +5,16 @@
 #include <ctime>
 #include <headerlib/Array2d.hpp>
 #include <headerlib/RangeIterator.h>
+#include <random>
 
 using namespace std;
 
 //#define RUN_TESTS
 //#define EXEC_PARRELELL
 
-constexpr size_t WORLD_SIZE = 400;
+constexpr size_t WORLD_SIZE = 200;
 
-constexpr size_t NUM_PEOPLE = 50;
+constexpr size_t NUM_PEOPLE = 100;
 
 inline PIterContainter iter_all(size_t max_size=WORLD_SIZE){
     return PIterContainter(0,0,max_size,max_size);
@@ -73,4 +74,12 @@ inline int64_t uclock() {
 }
 inline double time_to_sec(int64_t time){
     return time / 1000000000.0;
+}
+
+extern default_random_engine seed_gen;
+
+template<class generator_ty>
+inline double urand(generator_ty & gen){
+    uniform_real_distribution<double> dist(0,1);
+    return dist(gen);
 }

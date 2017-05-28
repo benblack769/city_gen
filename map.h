@@ -29,8 +29,8 @@ public:
     }
 };
 struct PointProperty{
-    double travel_speed;
-    double shelter_val;
+    //double travel_speed;
+    //double shelter_val;
     double food_content;
     PeopleSet residents;
 };
@@ -39,7 +39,19 @@ class Map{
 private:
     board<PointProperty> g_props;
 public:
+    Map(){
+        default_random_engine gen(seed_gen());
+        for(PointProperty & pp : g_props){
+            pp.food_content = urand(gen);
+        }
+    }
     PointProperty & operator[](Point p){
         return g_props[p];
+    }
+    void update_point_properties(){
+        for(PointProperty & pp : g_props){
+            pp.food_content += 0.001;
+            pp.food_content /= (1+pp.residents.size());
+        }
     }
 };

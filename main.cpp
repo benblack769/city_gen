@@ -3,6 +3,8 @@
 #include "constants.h"
 #include "test.h"
 
+default_random_engine seed_gen;
+
 int main(int argc, char *argv[])
 {
 #ifdef RUN_TESTS

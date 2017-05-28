@@ -4,6 +4,10 @@
 #include "infoholder.h"
 #include "map.h"
 
+inline Point wrap_point(Point p){
+    return Point(p.X %WORLD_SIZE,p.Y% WORLD_SIZE);
+}
+
 class World{
 public:
     People people;
@@ -14,7 +18,7 @@ public:
     }
     void addPersonToMap(infoID person,Point p){
         Point & ploc = people[person].location;
-        ploc = p;
+        ploc = wrap_point(p);
         map[ploc].residents.add(person);
     }
     void removePersonFromMap(infoID person){
@@ -44,6 +48,20 @@ public:
         return Point(rand()%WORLD_SIZE,rand()%WORLD_SIZE);
     }
     void update(){
-        cout << "arg" << endl;
+        for(infoID pid : people){
+            Point loc = people[pid].location;
+            
+            Point best_loc = loc;
+            double best_val = -10e-500;
+            for(Point p : iter_around(loc,1)){
+                double val = map[p].food_content;
+                if(best_val < val){
+                    best_val = val;
+                    best_loc = p;
+                }
+            }
+            movePerson(pid,best_loc);
+        }
+        map.update_point_properties();
     }
 };

@@ -9,6 +9,14 @@
 #include <iostream>
 using namespace std;
 
+const int max_slide = 20;
+const int max_time = 500;
+
+inline int slide_time(int slide){
+    //todo:change to proper logarithmic scale
+    return (slide *  max_time) / max_slide;
+}
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -34,17 +42,15 @@ MainWindow::MainWindow(QWidget *parent) :
     frame_timer.setInterval(50);
     frame_timer.start();
     connect(&frame_timer,&QTimer::timeout,this,&MainWindow::draw);
-    update_timer.setInterval(250);
+    update_timer.setInterval(5);
     update_timer.start();
     connect(&update_timer,&QTimer::timeout,[&](){world.update();});
 }
 QWidget * MainWindow::make_layout(){
     QWidget * W = new QWidget(this);
     
-    QCheckBox * box = new QCheckBox(QString("residents"),W);
-    box->setChecked(true);
-    connect(box,QCheckBox::stateChanged,this,draw);
-    chks[0] = box;
+    add_checkbox(QString("residents"),W,true,Qt::blue,[](PointProperty pp){return pp.residents.size();});
+    add_checkbox(QString("food_level"),W,true,Qt::green,[](PointProperty pp){return pp.food_content;});
     
     QLabel * sclab = new QLabel(QString("Speed Control"));
     QSlider * scslide = new QSlider(this);
@@ -70,7 +76,7 @@ QWidget * MainWindow::make_layout(){
     return W;
 }
 void MainWindow::draw(){
-    screen->draw_map(world.map,ScreenSettings{chks[0]->isChecked()});
+    screen->draw_map(world.map,colorers);
 }
 MainWindow::~MainWindow()
 {
