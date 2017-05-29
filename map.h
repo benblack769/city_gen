@@ -30,7 +30,7 @@ public:
 };
 struct PointProperty{
     //double travel_speed;
-    //double shelter_val;
+    double shelter_val;
     double food_content;
     PeopleSet residents;
 };
@@ -52,6 +52,9 @@ public:
         for(PointProperty & pp : g_props){
             pp.food_content += 0.001;
             pp.food_content /= (1+pp.residents.size());
+            
+            pp.shelter_val += 0.01 * pp.residents.size();
+            pp.shelter_val *= 0.99;
         }
     }
 };

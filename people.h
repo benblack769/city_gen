@@ -7,8 +7,8 @@
 class Person{
 public:
     //short term properties
-    //double energy;//food
-    //double health;//shelter
+    double energy;//food
+    double health;//shelter
 
     Point location;//don't change directly! use map_set
     

@@ -48,14 +48,25 @@ public:
         return Point(rand()%WORLD_SIZE,rand()%WORLD_SIZE);
     }
     void update(){
+        map.update_point_properties();
         for(infoID pid : people){
+            Person & pinfo = people[pid];
             Point loc = people[pid].location;
             
+            PointProperty mylocinfo = map[loc];
+            //
+            pinfo.energy *= 0.9;
+            pinfo.energy += mylocinfo.food_content/4;//produces extra food
+            pinfo.health *= 0.9;
+            pinfo.health += mylocinfo.shelter_val;
+            
             Point rand_p = weighted_random_choice(iter_around(loc,1),[&](Point P){
-                    return map[P].food_content;
+                    PointProperty pp = map[P];
+                    return pp.food_content +
+                           pp.shelter_val;
                 });
+            
             movePerson(pid,rand_p);
         }
-        map.update_point_properties();
     }
 };

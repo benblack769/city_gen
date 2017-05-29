@@ -127,14 +127,15 @@ inline auto sum_of(container_ty container,convert_fn_ty convert_fn)->decltype(co
 }
 template<class container_ty,class weight_fn_ty>
 inline auto weighted_random_choice(container_ty container,weight_fn_ty weight_fn)->decltype(*container.begin()){
+    using item_ty = decltype(*container.begin());
     assert(container.begin() != container.end() && "cannot choose anything in an empty container!");
     
-    double tot_weight = sum_of(container,weight_fn);
+    double tot_weight = sum_of(container,[&](item_ty item){return exp(double(weight_fn(item)));});
     
     default_random_engine gen(seed_gen());
     
     for(auto item : container){
-        double my_weight = weight_fn(item);
+        double my_weight = exp(weight_fn(item));
         double prob = my_weight/tot_weight;
         
         double randv = urand(gen);

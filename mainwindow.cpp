@@ -50,7 +50,8 @@ QWidget * MainWindow::make_layout(){
     QWidget * W = new QWidget(this);
     
     add_checkbox(QString("residents"),W,true,Qt::blue,[](PointProperty pp){return pp.residents.size();});
-    add_checkbox(QString("food_level"),W,true,Qt::green,[](PointProperty pp){return pp.food_content;});
+    add_checkbox(QString("food level"),W,true,Qt::green,[](PointProperty pp){return pp.food_content;});
+    add_checkbox(QString("shelter level"),W,true,Qt::yellow,[](PointProperty pp){return pp.shelter_val;});
     
     QLabel * sclab = new QLabel(QString("Speed Control"));
     QSlider * scslide = new QSlider(this);
