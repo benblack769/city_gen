@@ -51,16 +51,10 @@ public:
         for(infoID pid : people){
             Point loc = people[pid].location;
             
-            Point best_loc = loc;
-            double best_val = -10e-500;
-            for(Point p : iter_around(loc,1)){
-                double val = map[p].food_content;
-                if(best_val < val){
-                    best_val = val;
-                    best_loc = p;
-                }
-            }
-            movePerson(pid,best_loc);
+            Point rand_p = weighted_random_choice(iter_around(loc,1),[&](Point P){
+                    return map[P].food_content;
+                });
+            movePerson(pid,rand_p);
         }
         map.update_point_properties();
     }

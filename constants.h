@@ -6,6 +6,8 @@
 #include <headerlib/Array2d.hpp>
 #include <headerlib/RangeIterator.h>
 #include <random>
+#include <cassert>
+#include <algorithm>
 
 using namespace std;
 
@@ -82,4 +84,66 @@ template<class generator_ty>
 inline double urand(generator_ty & gen){
     uniform_real_distribution<double> dist(0,1);
     return dist(gen);
+}
+template<class container_ty,class val_ty,class reduce_fn_ty>
+inline val_ty reduce(container_ty container,val_ty init,reduce_fn_ty reduce_fn){
+    val_ty res = init;
+    for(auto & v : container){
+        res = reduce_fn(res,v);
+    }
+    return res;
+}
+template<class container_ty,class convert_fn_ty>
+inline auto max_of(container_ty container,convert_fn_ty convert_fn)->pair<decltype(convert_fn()),decltype(*container_ty::begin())>{
+    using val_ty = decltype(*container_ty::begin());
+    using num_ty = decltype(convert_fn());
+    if(!(container.begin() != container.end())){
+        return make_pair(num_ty(),val_ty());
+    }
+    else{
+        auto citer = container.begin();
+        val_ty res_item = *citer;
+        num_ty res_val = convert_fn(res_item);
+        ++citer;
+        for_each(citer,container.end(),[&](val_ty item){
+            num_ty val = convert_fn(item);
+            if(res_val < val){
+                res_val = val;
+                res_item = item;
+            }
+        });
+        return make_pair(res_val,res_item);
+    }
+}
+
+template<class container_ty,class convert_fn_ty>
+inline auto sum_of(container_ty container,convert_fn_ty convert_fn)->decltype(convert_fn(*container.begin())){
+    using num_ty = decltype(convert_fn(*container.begin()));
+    auto res = num_ty();
+    for(auto item : container){
+        res += convert_fn(item);
+    }
+    return res;
+}
+template<class container_ty,class weight_fn_ty>
+inline auto weighted_random_choice(container_ty container,weight_fn_ty weight_fn)->decltype(*container.begin()){
+    assert(container.begin() != container.end() && "cannot choose anything in an empty container!");
+    
+    double tot_weight = sum_of(container,weight_fn);
+    
+    default_random_engine gen(seed_gen());
+    
+    for(auto item : container){
+        double my_weight = weight_fn(item);
+        double prob = my_weight/tot_weight;
+        
+        double randv = urand(gen);
+        if(randv < prob){
+            return item;
+        }
+        
+        tot_weight -= my_weight;
+    }
+    assert(false && "reached condition that is supposed to happen with zero probabilty");
+    return *container.begin();
 }
