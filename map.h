@@ -1,7 +1,7 @@
 #pragma once
+#include <unordered_set>
 #include "constants.h"
 #include "infoholder.h"
-#include <unordered_set>
 
 class PeopleSet{
 private:
@@ -29,11 +29,18 @@ public:
     }
 };
 struct PointProperty{
-    //double travel_speed;
+    double travel_ease;
     double shelter_val;
     double food_content;
     PeopleSet residents;
 };
+
+inline double health_addition(const PointProperty & pp){
+    return pp.food_content / 2;
+}
+inline double sleep_addition(const PointProperty & pp){
+    return 1 + pp.shelter_val * 2;
+}
 
 class Map{
 private:
@@ -53,8 +60,17 @@ public:
             pp.food_content += 0.001;
             pp.food_content /= (1+pp.residents.size());
             
-            pp.shelter_val += 0.01 * pp.residents.size();
-            pp.shelter_val *= 0.99;
+            pp.shelter_val *= 0.997;
+            
+            pp.travel_ease *= 0.997;
         }
+    }
+    void get_points_around(vector<PointProperty> & out_pinputs,Point location){
+        assert(out_pinputs.size() == 9);
+        int i = 0; 
+        iter_around1(location,[&](Point x){
+            out_pinputs[i] = g_props[x];
+            i++;
+        });
     }
 };

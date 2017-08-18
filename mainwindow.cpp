@@ -42,7 +42,7 @@ MainWindow::MainWindow(QWidget *parent) :
     frame_timer.setInterval(50);
     frame_timer.start();
     connect(&frame_timer,&QTimer::timeout,this,&MainWindow::draw);
-    update_timer.setInterval(5);
+    update_timer.setInterval(2);
     update_timer.start();
     connect(&update_timer,&QTimer::timeout,[&](){world.update();});
 }
@@ -51,7 +51,8 @@ QWidget * MainWindow::make_layout(){
     
     add_checkbox(QString("residents"),W,true,Qt::blue,[](PointProperty pp){return pp.residents.size();});
     add_checkbox(QString("food level"),W,true,Qt::green,[](PointProperty pp){return pp.food_content;});
-    add_checkbox(QString("shelter level"),W,true,Qt::yellow,[](PointProperty pp){return pp.shelter_val;});
+    add_checkbox(QString("shelter level"),W,true,Qt::red,[](PointProperty pp){return pp.shelter_val;});
+    add_checkbox(QString("travel ease"),W,true,Qt::yellow,[](PointProperty pp){return pp.travel_ease;});
     
     QLabel * sclab = new QLabel(QString("Speed Control"));
     QSlider * scslide = new QSlider(this);

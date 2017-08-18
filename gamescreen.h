@@ -4,7 +4,7 @@
 #include <functional>
 #include <QGraphicsPixmapItem>
 
-#include <map.h>
+#include "map.h"
 
 struct rgba{
     uchar r;
@@ -48,7 +48,7 @@ public:
         for(Point p : iter_all()){
             QColor pcol = col;
             double baseval = pvalfn(m[p]);
-            double colored_val = normalize_value(baseval,minval,maxval)*255;
+            double colored_val = normalize_value(baseval,minval,maxval)*255*0.5;
             pcol.setAlpha(colored_val);
             res[p] = color_convert(pcol);
         }

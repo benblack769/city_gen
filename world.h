@@ -1,8 +1,10 @@
 #pragma once
 #include <iostream>
+
 #include "people.h"
 #include "infoholder.h"
 #include "map.h"
+#include "intelligence_option/intelligence.h"
 
 inline Point wrap_point(Point p){
     return Point(p.X %WORLD_SIZE,p.Y% WORLD_SIZE);
@@ -41,6 +43,8 @@ public:
     }
     void add_random_person(){
         Person p;
+        p.health = 1.0;
+        p.energy = 1.0;
         infoID per = people.add(p);
         addPersonToMap(per,random_p());
     }
@@ -48,25 +52,51 @@ public:
         return Point(rand()%WORLD_SIZE,rand()%WORLD_SIZE);
     }
     void update(){
+        
+        clock_t start = clock();
+        clock_t tot_other = 0;
+        
+        default_random_engine rand_gen(seed_gen());
+        
+        clock_t arg = clock();
         map.update_point_properties();
+        tot_other += clock() - arg;
         for(infoID pid : people){
             Person & pinfo = people[pid];
             Point loc = people[pid].location;
-            
-            PointProperty mylocinfo = map[loc];
+            //cout << loc.X << " " << loc.Y << endl;
+            PointProperty & mylocinfo = map[loc];
             //
+            
+            PersonIntelligence intel;
+            vector<PointProperty> properties(9);
+            map.get_points_around(properties,loc);
+            full_choice mychoice = intel.persons_choice(pinfo,properties,map[loc]);
+            
+            
+            // make world state respond to choice
             pinfo.energy *= 0.9;
-            pinfo.energy += mylocinfo.food_content/4;//produces extra food
             pinfo.health *= 0.9;
-            pinfo.health += mylocinfo.shelter_val;
-            
-            Point rand_p = weighted_random_choice(iter_around(loc,1),[&](Point P){
-                    PointProperty pp = map[P];
-                    return pp.food_content +
-                           pp.shelter_val;
-                });
-            
-            movePerson(pid,rand_p);
+            switch(mychoice.base){
+            case MOVE:
+                movePerson(pid, loc + mychoice.move_dir);
+                pinfo.energy *= 0.9;
+                break;
+            case EAT:
+                pinfo.health += health_addition(mylocinfo);
+                break;
+            case REST:
+                pinfo.energy += sleep_addition(mylocinfo);
+                break;
+            case SHELTER:
+                mylocinfo.shelter_val += 0.1;
+                break;
+            default:
+                assert(false && "no default case");
+            }
         }
+        clock_t tot_time = clock() - start;
+        cout << "tot time = " << tot_time << endl;
+        cout << "choice_time = " << tot_other << endl;
     }
 };

@@ -3,7 +3,7 @@
 #include "constants.h"
 #include "test.h"
 
-default_random_engine seed_gen;
+default_random_engine seed_gen(clock());
 
 int main(int argc, char *argv[])
 {
