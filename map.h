@@ -34,6 +34,7 @@ struct PointProperty{
     double food_content;
     PeopleSet residents;
 };
+using PointsAround = array<PointProperty,9>;
 
 inline double health_addition(const PointProperty & pp){
     return pp.food_content / 2;
@@ -65,12 +66,13 @@ public:
             pp.travel_ease *= 0.997;
         }
     }
-    void get_points_around(vector<PointProperty> & out_pinputs,Point location){
-        assert(out_pinputs.size() == 9);
+    PointsAround get_points_around(Point location){
+        PointsAround res;
         int i = 0; 
         iter_around1(location,[&](Point x){
-            out_pinputs[i] = g_props[x];
+            res[i] = g_props[x];
             i++;
         });
+        return res;
     }
 };

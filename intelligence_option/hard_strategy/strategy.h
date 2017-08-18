@@ -49,7 +49,7 @@ inline double value_of_moving(Person info, PointProperty pp){
             value_of_eating(info,pp);
 }
 
-inline vector<double> persons_choice(Person info, const vector<PointProperty> & properties, const PointProperty & cur_point){
+inline vector<double> persons_choice(Person info, const PointsAround & properties, const PointProperty & cur_point){
    vector<double> values(num_choices);
    iter_around1_idx(info.location, [&](Point pp, int idx){
       	full_choice move_choice(MOVE, pp - info.location); 
@@ -73,7 +73,7 @@ inline full_choice make_choice(vector<double> choice_vals){
 class PersonIntelligence{
 protected:
 public:
-    full_choice persons_choice(Person info, const vector<PointProperty> & properties, const PointProperty & cur_point){
+    full_choice persons_choice(Person info, const PointsAround & properties, const PointProperty & cur_point){
         return make_choice(::persons_choice(info,properties,cur_point));
     }
 };

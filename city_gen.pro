@@ -53,6 +53,4 @@ DISTFILES += \
     notes.md \
     README.md \
     .gitignore \
-    LICENSE \
-    intelligence_option/intelligence/.choice_maker.h.swp \
-    play.txt
+    LICENSE

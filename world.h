@@ -64,14 +64,12 @@ public:
         for(infoID pid : people){
             Person & pinfo = people[pid];
             Point loc = people[pid].location;
-            //cout << loc.X << " " << loc.Y << endl;
             PointProperty & mylocinfo = map[loc];
-            //
             
+            // uses intelligence to make choice
             PersonIntelligence intel;
-            vector<PointProperty> properties(9);
-            map.get_points_around(properties,loc);
-            full_choice mychoice = intel.persons_choice(pinfo,properties,map[loc]);
+            PointsAround points = map.get_points_around(loc);
+            full_choice mychoice = intel.persons_choice(pinfo,points,map[loc]);
             
             
             // make world state respond to choice
