@@ -32,18 +32,18 @@ inline double sleep_val(double turns_force_sleep){
 }
 
 
-inline double value_of_sleeping(Person info, PointProperty pp){
+inline double value_of_sleeping(Person info, const PointProperty & pp){
     return sleep_val(turns_force_sleep(info.energy + sleep_addition(pp))) 
             - sleep_val(turns_force_sleep(info.energy));
 }
-inline double value_of_shelter(Person info, PointProperty pp){
+inline double value_of_shelter(Person info, const PointProperty & pp){
     return pp.shelter_val / 3;
 }
-inline double value_of_eating(Person info, PointProperty pp){
+inline double value_of_eating(Person info, const PointProperty & pp){
     return survive_val(turns_survive(info.health + health_addition(pp))) 
             - survive_val(turns_survive(info.health));
 }
-inline double value_of_moving(Person info, PointProperty pp){
+inline double value_of_moving(Person info, const PointProperty & pp){
     return value_of_sleeping(info,pp) + 
             value_of_shelter(info,pp) + 
             value_of_eating(info,pp);
