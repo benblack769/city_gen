@@ -24,12 +24,14 @@ inline full_choice get_choice(int choice_idx){
     assert(choice_idx >= 0 && choice_idx < num_choices);
     if (choice_idx >= num_basic_choices){
         int move_loc = choice_idx - num_basic_choices;
-        full_choice{MOVE,move_loc%3,move_loc/3};
+        full_choice{MOVE,move_loc%3-1,move_loc/3-1};
     }
     else{
         return full_choice{static_cast<basic_choice>(choice_idx),-1,-1};
     }
 }
 inline int choice_idx(full_choice choice){
-    return choice.base == MOVE ? (choice.move_dir.Y*3 + choice.move_dir.X) : choice.base;
+    int res = choice.base == MOVE ? ((choice.move_dir.Y+1)*3 + (choice.move_dir.X+1)) : choice.base;
+    assert(res >= 0 && res < num_choices);
+    return res;
 }

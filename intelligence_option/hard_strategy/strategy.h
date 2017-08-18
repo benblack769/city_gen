@@ -53,7 +53,7 @@ inline vector<double> persons_choice(Person info, const PointsAround & propertie
    vector<double> values(num_choices);
    iter_around1_idx(info.location, [&](Point pp, int idx){
       	full_choice move_choice(MOVE, pp - info.location); 
-      values[choice_idx(move_choice)] = value_of_moving(info,properties[idx]);
+        values[choice_idx(move_choice)] = value_of_moving(info,properties[idx]);
    });
     full_choice sleep_choice(REST,Point());
     full_choice shelter_choice(SHELTER,Point());
