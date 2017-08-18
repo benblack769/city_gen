@@ -70,7 +70,7 @@ public:
             PersonIntelligence intel;
             PointsAround points = map.get_points_around(loc);
             full_choice mychoice = intel.persons_choice(pinfo,points,map[loc]);
-            
+            cout << "base " << mychoice.base << endl;
             
             // make world state respond to choice
             pinfo.energy *= 0.9;

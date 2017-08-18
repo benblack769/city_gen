@@ -25,10 +25,10 @@ inline double turns_force_sleep(double exaustion){
 }
 
 inline double survive_val(double turns_alive){
-    return 50.0 / (turns_alive + 0.0001);
+    return log(turns_alive + 0.0001);
 }
 inline double sleep_val(double turns_force_sleep){
-    return 3.0 / (turns_force_sleep + 0.0001);
+    return sqrt(turns_force_sleep + 0.0001);
 }
 
 
@@ -37,7 +37,7 @@ inline double value_of_sleeping(Person info, const PointProperty & pp){
             - sleep_val(turns_force_sleep(info.energy));
 }
 inline double value_of_shelter(Person info, const PointProperty & pp){
-    return pp.shelter_val / 3;
+    return 0.01 + pp.shelter_val / 3;
 }
 inline double value_of_eating(Person info, const PointProperty & pp){
     return survive_val(turns_survive(info.health + health_addition(pp))) 
@@ -65,7 +65,7 @@ inline vector<double> persons_choice(Person info, const PointsAround & propertie
 	return values;
 }
 inline full_choice make_choice(vector<double> choice_vals){
-   discrete_distribution<int> dist;
+   discrete_distribution<int> dist(choice_vals.begin(),choice_vals.end());
    int outchoice = dist(seed_gen);
    return get_choice(outchoice);
 }

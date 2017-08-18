@@ -54,6 +54,7 @@ public:
         }
     }
     PointProperty & operator[](Point p){
+        assert(p.X >= 0 && p.Y >= 0 && p.X < WORLD_SIZE && p.Y < WORLD_SIZE);
         return g_props[p];
     }
     void update_point_properties(){
@@ -68,10 +69,8 @@ public:
     }
     PointsAround get_points_around(Point location){
         PointsAround res;
-        int i = 0; 
-        iter_around1(location,[&](Point x){
-            res[i] = g_props[x];
-            i++;
+        iter_around1_idx(location,[&](Point x,int idx){
+            res.at(idx) = g_props[x];
         });
         return res;
     }

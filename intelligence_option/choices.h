@@ -31,7 +31,7 @@ inline full_choice get_choice(int choice_idx){
     }
 }
 inline int choice_idx(full_choice choice){
-    int res = choice.base == MOVE ? ((choice.move_dir.Y+1)*3 + (choice.move_dir.X+1)) : choice.base;
+    int res = choice.base == MOVE ? ((choice.move_dir.Y+1)*3 + (choice.move_dir.X+1)) + num_basic_choices : choice.base;
     assert(res >= 0 && res < num_choices);
     return res;
 }
