@@ -24,10 +24,10 @@ inline full_choice get_choice(int choice_idx){
     assert(choice_idx >= 0 && choice_idx < num_choices);
     if (choice_idx >= num_basic_choices){
         int move_loc = choice_idx - num_basic_choices;
-        full_choice{MOVE,move_loc%3-1,move_loc/3-1};
+        return full_choice(MOVE,move_loc%3-1,move_loc/3-1);
     }
     else{
-        return full_choice{static_cast<basic_choice>(choice_idx),-1,-1};
+        return full_choice(static_cast<basic_choice>(choice_idx),-1,-1);
     }
 }
 inline int choice_idx(full_choice choice){

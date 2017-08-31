@@ -3,9 +3,9 @@
 //#define RUN_TESTS
 //#define EXEC_PARRELELL
 
-constexpr size_t WORLD_SIZE = 200;
+constexpr size_t WORLD_SIZE = 20;
 
-constexpr size_t NUM_PEOPLE = 300;
+constexpr size_t NUM_PEOPLE = 50;
 
 template<typename obj_ty>
 class board:

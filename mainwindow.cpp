@@ -42,7 +42,7 @@ MainWindow::MainWindow(QWidget *parent) :
     frame_timer.setInterval(50);
     frame_timer.start();
     connect(&frame_timer,&QTimer::timeout,this,&MainWindow::draw);
-    update_timer.setInterval(2);
+    update_timer.setInterval(50);
     update_timer.start();
     connect(&update_timer,&QTimer::timeout,[&](){world.update();});
 }

@@ -44,28 +44,33 @@ inline double value_of_eating(Person info, const PointProperty & pp){
             - survive_val(turns_survive(info.health));
 }
 inline double value_of_moving(Person info, const PointProperty & pp){
-    return value_of_sleeping(info,pp) + 
-            value_of_shelter(info,pp) + 
-            value_of_eating(info,pp);
+    return 0.1 * value_of_sleeping(info,pp) + 
+            0.1 * value_of_shelter(info,pp) + 
+            0.1 * value_of_eating(info,pp);
 }
 
 inline vector<double> persons_choice(Person info, const PointsAround & properties, const PointProperty & cur_point){
    vector<double> values(num_choices);
    iter_around1_idx(info.location, [&](Point pp, int idx){
       	full_choice move_choice(MOVE, pp - info.location); 
-        values[choice_idx(move_choice)] = value_of_moving(info,properties[idx]);
+        values.at(choice_idx(move_choice)) = value_of_moving(info,properties.at(idx));
    });
     full_choice sleep_choice(REST,Point());
     full_choice shelter_choice(SHELTER,Point());
     full_choice eat_choice(EAT,Point());
     
-    values[choice_idx(sleep_choice)] = value_of_sleeping(info,cur_point);
-    values[choice_idx(shelter_choice)] = value_of_shelter(info,cur_point);
-    values[choice_idx(eat_choice)] = value_of_eating(info,cur_point);
+    values.at(choice_idx(sleep_choice)) = value_of_sleeping(info,cur_point);
+    values.at(choice_idx(shelter_choice)) = value_of_shelter(info,cur_point);
+    values.at(choice_idx(eat_choice)) = value_of_eating(info,cur_point);
 	return values;
 }
 inline full_choice make_choice(vector<double> choice_vals){
-   discrete_distribution<int> dist(choice_vals.begin(),choice_vals.end());
+    vector<double> actual_vals = choice_vals;
+    for(double & x : actual_vals){
+        assert(x >= 0);
+        x *= x;
+    }
+   discrete_distribution<int> dist(actual_vals.begin(),actual_vals.end());
    int outchoice = dist(seed_gen);
    return get_choice(outchoice);
 }

@@ -61,6 +61,9 @@ public:
         clock_t arg = clock();
         map.update_point_properties();
         tot_other += clock() - arg;
+        
+        delete_dead_people();
+        
         for(infoID pid : people){
             Person & pinfo = people[pid];
             Point loc = people[pid].location;
@@ -70,31 +73,50 @@ public:
             PersonIntelligence intel;
             PointsAround points = map.get_points_around(loc);
             full_choice mychoice = intel.persons_choice(pinfo,points,map[loc]);
-            cout << "base " << mychoice.base << endl;
             
-            // make world state respond to choice
-            pinfo.energy *= 0.9;
-            pinfo.health *= 0.9;
-            switch(mychoice.base){
-            case MOVE:
-                movePerson(pid, loc + mychoice.move_dir);
-                pinfo.energy *= 0.9;
-                break;
-            case EAT:
-                pinfo.health += health_addition(mylocinfo);
-                break;
-            case REST:
-                pinfo.energy += sleep_addition(mylocinfo);
-                break;
-            case SHELTER:
-                mylocinfo.shelter_val += 0.1;
-                break;
-            default:
-                assert(false && "no default case");
+            //forces sleep if out of energy
+            if (pinfo.energy <= 0.05){
+                 mychoice.base = REST;
             }
+            person_action(pid,mylocinfo,mychoice);
         }
         clock_t tot_time = clock() - start;
         cout << "tot time = " << tot_time << endl;
         cout << "choice_time = " << tot_other << endl;
+    }
+    void delete_dead_people(){
+        vector<infoID> dead_people;
+        for(infoID pid : people){
+            if (people.get(pid).health < 0.01){
+                dead_people.push_back(pid);
+            }
+        }
+        for(infoID dead_pid : dead_people){
+            people.delete_val(dead_pid);
+        }
+    }
+
+    void person_action(infoID & pid, PointProperty & mylocinfo, full_choice mychoice){
+	    // make world state respond to choice
+	    Person & pinfo = people.get(pid);
+            pinfo.energy *= 0.9;
+	    pinfo.health *= 0.9;
+	    switch(mychoice.base){
+	    case MOVE:
+		movePerson(pid, pinfo.location + mychoice.move_dir);
+		pinfo.energy *= 0.9;
+		break;
+	    case EAT:
+		pinfo.health += health_addition(mylocinfo);
+		break;
+	    case REST:
+		pinfo.energy += sleep_addition(mylocinfo);
+		break;
+	    case SHELTER:
+		mylocinfo.shelter_val += 0.1;
+		break;
+	    default:
+		assert(false && "no default case");
+	}
     }
 };
